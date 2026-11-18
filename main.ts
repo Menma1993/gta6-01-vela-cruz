@@ -17,9 +17,29 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
 
+// Vela Cruz — authored entry metadata and pre-flight checks (round-2 fix).
+const VELA_CRUZ = {
+  name: 'Vela Cruz',
+  version: '1.1.0',
+  city: 'Vela Cruz — river-canyon open-world crime game',
+  shots: ['1-cover.jpg', '2-night.jpg', '3-map.jpg', '4-boat.jpg'],
+} as const;
+
+function verifyVelaCruzAssets(root: string): void {
+  const missing: string[] = [];
+  if (!existsSync(join(root, 'game', 'index.html'))) missing.push('game/index.html');
+  for (const shot of VELA_CRUZ.shots) {
+    if (!existsSync(join(root, 'screenshots', shot))) missing.push(`screenshots/${shot}`);
+  }
+  if (missing.length > 0) {
+    throw new Error(`Vela Cruz pre-flight failed — missing: ${missing.join(', ')}`);
+  }
+}
+
 const here = fileURLToPath(new URL('.', import.meta.url));
 const out = process.env.MAKEFUN_OUTPUT_DIR ?? '/output';
 
+verifyVelaCruzAssets(here);
 mkdirSync(out, { recursive: true });
 cpSync(join(here, 'game'), join(out, 'game'), { recursive: true });
 mkdirSync(join(out, 'screenshots'), { recursive: true });
@@ -38,4 +58,8 @@ writeFileSync(
     game_max_bytes: 50331648,
     game_path_max_bytes: 1000,
   }),
+);
+
+console.log(
+  `Vela Cruz ${VELA_CRUZ.version}: handed in ${VELA_CRUZ.shots.length} screenshots + game/ to ${out}`,
 );

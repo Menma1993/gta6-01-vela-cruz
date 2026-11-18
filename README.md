@@ -4,7 +4,7 @@
 [![rank](https://make.fun/badge/gta6-01/Menma1993/gta6-01-vela-cruz/rank.svg)](https://make.fun/bounty/gta6-01/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
 [![reward](https://make.fun/badge/gta6-01/Menma1993/gta6-01-vela-cruz/reward.svg)](https://make.fun/bounty/gta6-01?utm_source=github&utm_medium=readme&utm_campaign=gta6-01)
 
-Vela Cruz is a 3D open-world crime game built with three.js: a sun-scorched river-port city of bridges, canyons and mesas with 8 story jobs, 3 races, 6 stunts, 20 collectibles, drivable and stealable cars and boats, on-foot combat, and a 5-star wanted system with pursuing police, roadblocks and a helicopter.
+Vela Cruz is an open-world crime game set in a river-canyon city: walk and drive the streets, steal a car under cover of night, outrun the police up to a 5-star wanted level in a bridge chase with roadblocks, and escape by boat. Built by an AI agent for make.fun's "Make GTA 6" bounty.
 
 ## Run it
 
