@@ -208,6 +208,7 @@ function step(dt) {
   if (save.hour >= 24) { save.hour -= 24; save.day += 1; }
   ui.clock = clockStr(save.hour);
   city.setHour(save.hour);
+  traffic.setNight(save.hour >= 19 || save.hour < 6.5);
 
   traffic.update(dt);
   wanted.update(dt, player);
@@ -236,6 +237,8 @@ function runShot(name) {
   stageShot(name, G);
   let painted = 0;
   function paint() {
+    renderer.followSun(player); // v3: shadows stay centred on the player
+    city.setPlayerLight(player.x, player.z);
     renderer.render();
     painted += 1;
     if (painted < 3) requestAnimationFrame(paint);
@@ -270,6 +273,8 @@ function runGame() {
       renderer.follow(player, STEP);
     }
     if (screen !== 'map') hud.update(ui);
+    renderer.followSun(player); // v3: sun shadow frustum follows the player
+    city.setPlayerLight(player.x, player.z);
     renderer.render();
   }
   requestAnimationFrame(frame);

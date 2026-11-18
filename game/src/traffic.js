@@ -22,7 +22,47 @@ export function makeCarMesh(color, police = false) {
     const w = new THREE.Mesh(wheelGeo, wheelMat);
     w.rotation.z = Math.PI / 2; w.position.set(x, 0.42, z); g.add(w);
   }
+  // v3: headlights + taillights — emissive lenses plus glow sprites, switched
+  // on at night (setNight). A street full of headlights is what makes the
+  // night shot read as traffic instead of parked boxes.
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffe9a0, emissiveIntensity: 0.4 });
+  const tailMat = new THREE.MeshStandardMaterial({ color: 0xaa1111, emissive: 0xff2222, emissiveIntensity: 0.6 });
+  for (const x of [-0.7, 0.7]) {
+    const hl = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.1), headMat);
+    hl.position.set(x, 0.75, 2.21); g.add(hl);
+  }
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 0.1), tailMat);
+  tail.position.set(0, 0.8, -2.21); g.add(tail);
+  const glowTex = makeCarGlowTexture();
+  const headGlows = [];
+  for (const x of [-0.7, 0.7]) {
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffe9a0, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+    sp.scale.set(1.6, 1.6, 1);
+    sp.position.set(x, 0.75, 2.4); g.add(sp);
+    headGlows.push(sp);
+  }
+  const tailGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff2233, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+  tailGlow.scale.set(2.2, 1.2, 1);
+  tailGlow.position.set(0, 0.8, -2.4); g.add(tailGlow);
+  g.userData.lights = { headMat, tailMat, headGlows, tailGlow };
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
+}
+
+let carGlowTex = null;
+function makeCarGlowTexture() {
+  if (carGlowTex) return carGlowTex;
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 64;
+  const g2 = c.getContext('2d');
+  const grad = g2.createRadialGradient(32, 32, 2, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.4, 'rgba(255,255,255,0.5)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g2.fillStyle = grad;
+  g2.fillRect(0, 0, 64, 64);
+  carGlowTex = new THREE.CanvasTexture(c);
+  return carGlowTex;
 }
 
 const TRAFFIC_COLORS = [0xc9a227, 0x7e8ba0, 0x4a6b8a, 0x8a4a4a, 0x5a7d4a, 0xd8d8d8, 0x3a3a3a, 0xb98a68];
@@ -77,6 +117,17 @@ export function createTraffic(scene, seed = 11) {
 
   return {
     cars, peds,
+    /** Night: headlights + taillights on for every traffic car. */
+    setNight(on) {
+      for (const c of cars) {
+        const L = c.mesh.userData.lights;
+        if (!L) continue;
+        L.headMat.emissiveIntensity = on ? 2.2 : 0.4;
+        L.tailMat.emissiveIntensity = on ? 2.0 : 0.6;
+        for (const s of L.headGlows) s.material.opacity = on ? 0.75 : 0;
+        L.tailGlow.material.opacity = on ? 0.8 : 0;
+      }
+    },
     update(dt) {
       for (const c of cars) {
         c.t += c.route.dir * c.speed * dt;

@@ -177,16 +177,24 @@ export function createWater(scene, half = 210, riverHalf = 16) {
         vec3 V = normalize(uCam - vWorld);
         vec3 N = normalize(vec3(wob * 0.55, 1.0, (n2 - 0.5) * 0.55));
         float fres = pow(1.0 - max(dot(V, N), 0.0), 3.0);
-        vec3 col = mix(uDeep, uSky, 0.25 + fres * 0.75);
-        // Sun glint: a broken glitter path toward the sun.
+        vec3 col = mix(uDeep, uSky, 0.45 + fres * 0.55); // v3.3: brighter
+        // from above — from a high camera the fresnel is ~0 and the old
+        // 0.25 mix read as a dark teal slit instead of a river.
+        // Sun glint: a broken glitter path toward the sun (v3: stronger +
+        // broader, so the river sparkles at chase-cam distance instead of
+        // reading as a flat grey-blue plane).
         vec3 R = reflect(-normalize(uSunDir), N);
-        float glint = pow(max(dot(R, V), 0.0), 90.0) * 1.4;
+        float glint = pow(max(dot(R, V), 0.0), 70.0) * 1.9;
         col += uSunColor * glint;
-        // Current lanes: faint brighter streaks running down-river.
-        col += vec3(0.05, 0.09, 0.09) * smoothstep(0.62, 0.95, n1) * 0.5;
-        // Shore foam where the water meets the canyon banks.
+        // Wide sheen: a softer sun path under the hard glitter.
+        col += uSunColor * pow(max(dot(R, V), 0.0), 18.0) * 0.35;
+        // Fine sparkle: pinpricks of sun where both noise octaves peak.
+        col += uSunColor * step(0.86, n1 * n2 + 0.28) * 0.22;
+        // Current lanes: brighter streaks running down-river (v3: stronger).
+        col += vec3(0.05, 0.09, 0.09) * smoothstep(0.62, 0.95, n1) * 0.9;
+        // Shore foam where the water meets the canyon banks (v3: brighter).
         float edge = smoothstep(0.0, 0.10, vUv.y) * smoothstep(1.0, 0.90, vUv.y);
-        col = mix(vec3(0.85, 0.93, 0.93), col, edge);
+        col = mix(vec3(0.92, 0.97, 0.97), col, edge);
         gl_FragColor = vec4(col, 1.0);
       }`,
   });

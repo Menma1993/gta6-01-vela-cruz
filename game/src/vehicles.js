@@ -26,6 +26,7 @@ function buildCarMesh(color) {
   // Red rear light bar — the chase camera mostly sees the back of the car.
   const tail = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 0.1), new THREE.MeshStandardMaterial({ color: 0xaa1111, emissive: 0xff2222, emissiveIntensity: 1.4 }));
   tail.position.set(0, 0.85, -2.31); g.add(tail);
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; }); // v3: real shadows
   return g;
 }
 
@@ -94,16 +95,21 @@ export function createPursuitBoats(scene) {
   };
 }
 
-function buildFigureMesh(shirtColor = 0xd94f4f) {
+function buildFigureMesh(shirtColor = 0xe85d3d) {
   const g = new THREE.Group();
   const legs = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.75, 0.35), new THREE.MeshStandardMaterial({ color: 0x2a2f3a }));
   legs.position.y = 0.38; g.add(legs);
+  // v3: brighter jacket + pale cap so the on-foot figure reads at night
+  // instead of a dark silhouette.
   const torso = new THREE.Mesh(new THREE.BoxGeometry(0.75, 1.05, 0.42), new THREE.MeshStandardMaterial({ color: shirtColor }));
   torso.position.y = 1.15; g.add(torso);
   const head = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.48, 0.48), new THREE.MeshStandardMaterial({ color: 0xd9a986 }));
   head.position.y = 1.95; g.add(head);
+  const cap = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.16, 0.52), new THREE.MeshStandardMaterial({ color: 0xe8e2d0 }));
+  cap.position.y = 2.22; g.add(cap);
   const arm = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.8, 0.2), new THREE.MeshStandardMaterial({ color: shirtColor }));
   arm.position.set(0.5, 1.2, 0.15); arm.rotation.x = -1.2; g.add(arm); // gun arm, raised
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
 

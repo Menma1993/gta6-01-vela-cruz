@@ -6,6 +6,7 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { WORLD, PALETTE, DISTRICTS, SHOPS, COLLECTIBLES_TOTAL } from './config.js';
 import { createSky, createWater, createRain, createDust, makeGlowTexture, makeStreakTexture } from './atmosphere.js';
+import { facadeTexture, strataTexture, groundTexture } from './textures.js';
 
 function box(w, h, d, color, x, y, z, opts = {}) {
   const m = new THREE.Mesh(
@@ -43,29 +44,6 @@ export function skyFor(hour) {
   return { sky: 0x0d1730, fog: 0x0d1730, sun: 0x8fa3ff, amb: 0.35, sunY: -20, sunI: 0.5, fill: 0.3, fogD: 0.0035 };
 }
 
-/** Ground speckle: warm dust with darker patches, so the dirt reads as dirt. */
-function groundTexture() {
-  const c = document.createElement('canvas');
-  c.width = 512; c.height = 512;
-  const g = c.getContext('2d');
-  g.fillStyle = '#8a7a5e'; g.fillRect(0, 0, 512, 512);
-  for (let i = 0; i < 5200; i += 1) {
-    const v = Math.random();
-    g.fillStyle = v < 0.5 ? 'rgba(60,45,28,0.16)' : 'rgba(210,190,150,0.12)';
-    const r = 1 + Math.random() * 3;
-    g.beginPath(); g.arc(Math.random() * 512, Math.random() * 512, r, 0, Math.PI * 2); g.fill();
-  }
-  for (let i = 0; i < 26; i += 1) {
-    g.fillStyle = 'rgba(70,52,32,0.10)';
-    g.beginPath(); g.ellipse(Math.random() * 512, Math.random() * 512, 20 + Math.random() * 50, 14 + Math.random() * 30, Math.random() * 3, 0, Math.PI * 2); g.fill();
-  }
-  const tex = new THREE.CanvasTexture(c);
-  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(7, 7);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  return tex;
-}
-
 /** Window atlas: a grid of windows, some lit warm, some dark — the emissive
  *  map every building window strip shares. At night it lights the city. */
 function windowAtlas() {
@@ -101,6 +79,13 @@ export function createCity(seed = 7) {
   sun.position.set(-60, 26, -80);
   scene.add(sun);
   scene.add(sun.target);
+  // v3: the sun's shadow frustum follows the player (followSun), and the
+  // night gets a warm point light that rides with the player so the on-foot
+  // figure reads as a person, not a dark silhouette.
+  const playerLight = new THREE.PointLight(0xffd9a0, 0, 30, 1.5);
+  playerLight.position.set(0, 4, 0);
+  scene.add(playerLight);
+  let sunYeff = 26;
   // Warm fill from the south (behind the chase camera) so car rears and
   // building faces toward the camera are lit, not black, at golden hour.
   const fill = new THREE.DirectionalLight(0xffd9a0, 1.0);
@@ -112,6 +97,17 @@ export function createCity(seed = 7) {
   const shells = []; // collectible Sun Shells {x,z,mesh,taken}
   const lamps = [];
   const streaks = []; // wet-road lamp streaks (visible only when wet)
+  const pools = []; // warm light pools on the ground under lamps (night only)
+
+  // Shared rock strata material: canyon walls + mesa sides read as layered
+  // rock instead of flat orange slabs. One texture, two repeats.
+  const strataTex = strataTexture();
+  strataTex.repeat.set(6, 1);
+  const strataMat = new THREE.MeshStandardMaterial({ map: strataTex, roughness: 0.95, metalness: 0 });
+  const mesaTex = strataTexture();
+  mesaTex.repeat.set(3, 1); // taller bands on the mesa side faces
+  const mesaMat = new THREE.MeshStandardMaterial({ map: mesaTex, roughness: 0.95, metalness: 0 });
+  const screeMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2f, roughness: 1 });
 
   // Atmosphere pieces this city owns: shader river, rain, dust, glow sprites.
   const water = createWater(scene, WORLD.half, WORLD.riverHalf);
@@ -120,30 +116,70 @@ export function createCity(seed = 7) {
   const rain = createRain(scene, streakTex);
   const dust = createDust(scene, glowTex);
 
-  // Ground: speckled dirt, not a flat brown plane.
+  // Ground: speckled dirt, not a flat brown plane. Receives shadows (v3).
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD.half * 2, WORLD.half * 2), new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2; scene.add(ground);
-  const mesa = box(150, 14, 130, 0x9c6b4a, 135, 7, 55); scene.add(mesa);
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  const mesa = new THREE.Mesh(new THREE.BoxGeometry(150, 14, 130), mesaMat);
+  mesa.position.set(135, 7, 55); mesa.castShadow = true; mesa.receiveShadow = true; scene.add(mesa);
   colliders.push({ x0: 60, z0: -10, x1: 210, z1: 120 });
   // Mesa Verde shanties + a water tower on the mesa top — the flat top read
   // as an empty orange slab from any high camera; structures break it up.
+  // v3: more of them, plus an antenna mast and a billboard, so the top reads
+  // as a lived-in district from the wide shot.
   const mesaTop = [
     [10, 6, 8, 0x8a6a4a, 90, 17, 20], [8, 5, 10, 0x7a5a3c, 150, 16.5, 60],
     [7, 4, 6, 0xb98a5a, 70, 16, 0], [9, 5, 7, 0x8a6a4a, 180, 16.5, 100],
     [6, 4, 6, 0x6b4a2f, 110, 16, 100], [3, 2, 3, 0x6b4a2f, 95, 15, 80],
     [4, 2.5, 3, 0x6b4a2f, 165, 15.2, 30], [3, 2, 4, 0x6b4a2f, 130, 15, 10],
+    [8, 4, 7, 0x9c7a50, 140, 16, 30], [6, 3.5, 6, 0xb98a5a, 100, 15.8, 45],
+    [5, 3, 5, 0x7a5a3c, 170, 15.5, 75], [7, 4, 5, 0x8a6a4a, 85, 16, 95],
   ];
-  for (const [w, h, d, c, x, y, z] of mesaTop) scene.add(box(w, h, d, c, x, y, z));
+  for (const [w, h, d, c, x, y, z] of mesaTop) {
+    const m = box(w, h, d, c, x, y, z);
+    m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  }
+  // Antenna mast + billboard on the mesa top: vertical accents for the skyline.
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 22, 6), new THREE.MeshStandardMaterial({ color: 0x3a3a3a }));
+  mast.position.set(120, 25, 40); mast.castShadow = true; scene.add(mast);
+  const mastBar = new THREE.Mesh(new THREE.BoxGeometry(6, 0.3, 0.3), new THREE.MeshStandardMaterial({ color: 0x3a3a3a }));
+  mastBar.position.set(120, 32, 40); scene.add(mastBar);
+  const billboard = box(14, 6, 0.8, 0x2e7d6b, 150, 17, 20, { emissive: 0x2e7d6b, ei: 0.25 });
+  billboard.rotation.y = 0.5; billboard.castShadow = true; scene.add(billboard);
+  const billboardLegs = box(1, 3, 1, 0x3a3a3a, 150, 15.5, 20);
+  scene.add(billboardLegs);
   const towerLegs = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 8, 6), new THREE.MeshStandardMaterial({ color: 0x4a4a4a }));
   towerLegs.position.set(120, 18, 90); scene.add(towerLegs);
   const towerTank = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 4, 10), new THREE.MeshStandardMaterial({ color: 0x7d9ab5, roughness: 0.6, metalness: 0.3 }));
-  towerTank.position.set(120, 24, 90); scene.add(towerTank);
+  towerTank.position.set(120, 24, 90); towerTank.castShadow = true; scene.add(towerTank);
   // Canyon walls line both river banks (z = ±26), with a gap at the bridge (x = 0).
+  // v3: strata-textured rock + scree strips + boulders at the base, so the
+  // walls read as canyon, not painted flats.
   for (const wz of [-26, 26]) {
     for (const [x0, x1] of [[-210, -10], [10, 210]]) {
       const w = (x1 - x0);
-      scene.add(box(w, 9, 10, 0x7a5a3c, (x0 + x1) / 2, 4.5, wz));
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, 9, 10), strataMat);
+      wall.position.set((x0 + x1) / 2, 4.5, wz);
+      wall.castShadow = true; wall.receiveShadow = true;
+      scene.add(wall);
       colliders.push({ x0, z0: wz - 5, x1, z1: wz + 5 });
+      // Scree strip at the wall base + scattered boulders.
+      // v3.3: boulders use their OWN prng (seed+999) — drawing them from the
+      // city's rnd() shifted the stream and moved every building, including
+      // one into the river in front of the boat camera.
+      const brnd = (() => { let s2 = (seed + 999) | 0; return () => { s2 = (s2 * 1664525 + 1013904223) | 0; return ((s2 >>> 0) / 4294967296); }; })();
+      const scree = new THREE.Mesh(new THREE.PlaneGeometry(w, 7), screeMat);
+      scree.rotation.x = -Math.PI / 2;
+      scree.position.set((x0 + x1) / 2, 0.05, wz + (wz < 0 ? 8 : -8));
+      scree.receiveShadow = true;
+      scene.add(scree);
+      for (let b = 0; b < 9; b += 1) {
+        const bw = 1.5 + brnd() * 2.5;
+        const boulder = new THREE.Mesh(new THREE.BoxGeometry(bw, bw * 0.7, bw), new THREE.MeshStandardMaterial({ color: 0x7d5a3a, roughness: 1 }));
+        boulder.position.set(x0 + 8 + brnd() * (w - 16), bw * 0.3, wz + (wz < 0 ? 8 : -8) + (brnd() - 0.5) * 3);
+        boulder.rotation.y = brnd() * 3;
+        boulder.castShadow = true;
+        scene.add(boulder);
+      }
     }
   }
 
@@ -152,23 +188,66 @@ export function createCity(seed = 7) {
   const roadMat = new THREE.MeshStandardMaterial({ color: PALETTE.road, roughness: 0.95 });
   function road(w, d, x, z) {
     const r = new THREE.Mesh(new THREE.PlaneGeometry(w, d), roadMat);
-    r.rotation.x = -Math.PI / 2; r.position.set(x, 0.06, z); scene.add(r);
+    r.rotation.x = -Math.PI / 2; r.position.set(x, 0.06, z); r.receiveShadow = true; scene.add(r);
   }
   road(16, 420, 0, 0); road(420, 14, 0, -60); road(420, 14, 0, 60); road(420, 14, 0, 140); road(14, 420, -90, 0); road(14, 420, 90, 0);
   // Sidewalks: pale strips flanking the avenue + the two main cross streets.
   const walkMat = new THREE.MeshStandardMaterial({ color: 0x9a8a6e, roughness: 1 });
   function walk(w, d, x, z) {
     const r = new THREE.Mesh(new THREE.PlaneGeometry(w, d), walkMat);
-    r.rotation.x = -Math.PI / 2; r.position.set(x, 0.07, z); scene.add(r);
+    r.rotation.x = -Math.PI / 2; r.position.set(x, 0.07, z); r.receiveShadow = true; scene.add(r);
   }
   walk(3, 400, -9.5, 0); walk(3, 400, 9.5, 0);
   walk(400, 3, 0, -68.5); walk(400, 3, 0, -51.5);
   walk(400, 3, 0, 51.5); walk(400, 3, 0, 68.5);
-  const dashMat = new THREE.MeshBasicMaterial({ color: 0xd8d8d8 });
-  for (let z = -200; z < 200; z += 12) {
-    if (Math.abs(z) < 24) continue; // the bridge has its own markings
-    const d = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 4), dashMat);
-    d.rotation.x = -Math.PI / 2; d.position.set(0, 0.09, z); scene.add(d);
+  // v3: all road paint in ONE InstancedMesh — avenue centre dashes, edge
+  // lines, and zebra crosswalks at the three avenue intersections. Paint is
+  // what makes a road read as a road at street level (cover + night shots).
+  {
+    const markGeo = new THREE.PlaneGeometry(1, 1);
+    const markMat = new THREE.MeshBasicMaterial({ color: 0xd8d8d8 });
+    const marks = [];
+    const put = (x, z, w, d) => marks.push([x, z, w, d]);
+    for (let z = -200; z < 200; z += 12) {
+      if (Math.abs(z) < 24) continue; // the bridge has its own markings
+      put(0, z, 0.5, 4); // avenue centre dashes
+    }
+    for (const cz of [-60, 60, 140]) {
+      for (const dz of [-10, 10]) {
+        for (let x = -7; x <= 7; x += 2) put(x, cz + dz, 0.7, 3.2); // zebra across the avenue
+      }
+      for (let x = -200; x < 200; x += 12) {
+        if (Math.abs(x) < 14) continue;
+        put(x, cz, 4, 0.5); // cross-street centre dashes
+      }
+    }
+    for (const z0 of [[-200, -24], [24, 200]]) {
+      put(-7.4, (z0[0] + z0[1]) / 2, 0.25, z0[1] - z0[0]); // avenue edge lines
+      put(7.4, (z0[0] + z0[1]) / 2, 0.25, z0[1] - z0[0]);
+    }
+    const inst = new THREE.InstancedMesh(markGeo, markMat, marks.length);
+    const m4 = new THREE.Matrix4();
+    const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+    const pos = new THREE.Vector3();
+    const sc = new THREE.Vector3();
+    marks.forEach(([x, z, w, d], i) => {
+      pos.set(x, 0.09, z); sc.set(w, d, 1);
+      m4.compose(pos, q, sc);
+      inst.setMatrixAt(i, m4);
+    });
+    inst.instanceMatrix.needsUpdate = true;
+    scene.add(inst);
+    // Bridge deck dashes (on the deck top, y=0.12).
+    const deckMarks = [];
+    for (let z = -60; z <= 60; z += 12) deckMarks.push(z);
+    const deckInst = new THREE.InstancedMesh(markGeo, markMat, deckMarks.length);
+    deckMarks.forEach((z, i) => {
+      pos.set(0, 0.12, z); sc.set(0.5, 4, 1);
+      m4.compose(pos, q, sc);
+      deckInst.setMatrixAt(i, m4);
+    });
+    deckInst.instanceMatrix.needsUpdate = true;
+    scene.add(deckInst);
   }
 
   // Vela Cruz Bridge: deck over the river (top at y≈0.1, so cars drive ON it),
@@ -182,10 +261,12 @@ export function createCity(seed = 7) {
       const p = box(3, 8, 3, 0x8a7a5e, px, -2, pz); scene.add(p);
     }
   }
-  // Bridge towers with VELA CRUZ letters.
+  // Bridge towers with VELA CRUZ letters, joined by a crossbeam so each
+  // pair reads as a gate, not two bare posts.
   for (const tz of [-34, 34]) {
-    const t = box(2.5, 16, 2.5, 0x8a6a44, -8.5, 8, tz); scene.add(t);
-    const t2 = box(2.5, 16, 2.5, 0x8a6a44, 8.5, 8, tz); scene.add(t2);
+    const t = box(2.5, 16, 2.5, 0x8a6a44, -8.5, 8, tz); t.castShadow = true; scene.add(t);
+    const t2 = box(2.5, 16, 2.5, 0x8a6a44, 8.5, 8, tz); t2.castShadow = true; scene.add(t2);
+    const beam = box(19.5, 1.6, 2, 0x8a6a44, 0, 15.2, tz); beam.castShadow = true; scene.add(beam);
   }
   const bridgeSign = labelSprite('VELA CRUZ BRIDGE', '#ffd34d', 52);
   bridgeSign.position.set(0, 19, -34); scene.add(bridgeSign);
@@ -197,7 +278,9 @@ export function createCity(seed = 7) {
   for (let i = 0; i < 90; i += 1) {
     const x = -195 + rnd() * 390;
     const z = -195 + rnd() * 390;
-    if (Math.abs(x) < 26 && Math.abs(z) < 26) continue; // river + bridge corridor
+    if (Math.abs(z) < 32) continue; // v3.3: the river runs the full width —
+    // the old filter only excluded the bridge rectangle, so blocks could
+    // spawn IN the river (one blocked the boat camera).
     if (Math.abs(x) < 12 || Math.abs(z + 60) < 11 || Math.abs(z - 60) < 11 || Math.abs(z - 140) < 11) continue; // roads
     if (Math.abs(x + 90) < 11 || Math.abs(x - 90) < 11) continue;
     if (x > 55 && z > -5 && z < 125) continue; // mesa footprint
@@ -213,8 +296,13 @@ export function createCity(seed = 7) {
   const allSpots = spots.map((p) => ({ ...p, w: 12 + rnd() * 10, d: 12 + rnd() * 10, h: 7 + rnd() * 22 }))
     .concat(towers);
   const unitBox = new THREE.BoxGeometry(1, 1, 1);
-  const facadeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.05 });
+  // v3: the facade atlas gives every building face windows, floor lines and
+  // a shopfront band — the blocks stop reading as plain boxes. The atlas is
+  // light so the per-district instanceColor still provides the hue.
+  const facadeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.05, map: facadeTexture() });
   const facades = new THREE.InstancedMesh(unitBox, facadeMat, allSpots.length);
+  facades.castShadow = true;
+  facades.receiveShadow = true;
   const winMat = new THREE.MeshStandardMaterial({
     color: 0x2c3a55, roughness: 0.4, metalness: 0.3,
     emissive: 0xffffff, emissiveMap: windowAtlas(), emissiveIntensity: 0,
@@ -242,6 +330,21 @@ export function createCity(seed = 7) {
   scene.add(facades);
   scene.add(windows);
 
+  // v3: roof props on the downtown towers — AC boxes, vents and an antenna
+  // per tower, so the skyline has a roofline instead of flat caps.
+  for (const t of towers) {
+    const ac1 = box(3, 1.2, 2.4, 0x5a5a5a, t.x - 3, t.h + 0.6, t.z - 2);
+    ac1.castShadow = true; scene.add(ac1);
+    const ac2 = box(2.2, 1, 2, 0x6b6b6b, t.x + 3.5, t.h + 0.5, t.z + 3);
+    ac2.castShadow = true; scene.add(ac2);
+    const vent = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.9, 2.2, 8), new THREE.MeshStandardMaterial({ color: 0x4a4a4a }));
+    vent.position.set(t.x + 1, t.h + 1.1, t.z - 4); vent.castShadow = true; scene.add(vent);
+    const ant = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.2, 7, 6), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+    ant.position.set(t.x - 5, t.h + 3.5, t.z + 4); scene.add(ant);
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 2 }));
+    beacon.position.set(t.x - 5, t.h + 7.2, t.z + 4); scene.add(beacon);
+  }
+
   // Neon Mile: Club Voltage + neon signs (emissive boxes that glow at night).
   const club = box(26, 12, 16, 0x241a33, -110, 6, 55); scene.add(club);
   colliders.push({ x0: -123, z0: 47, x1: -97, z1: 63 });
@@ -254,6 +357,34 @@ export function createCity(seed = 7) {
   clubSign.position.set(-110, 15.5, 46); scene.add(clubSign);
   const mileSign = labelSprite('NEON MILE', '#00e5ff', 48);
   mileSign.position.set(-110, 20, 60); scene.add(mileSign);
+  // v3: the club's north face gets a lit window strip (it was a black wall
+  // in the night shot) + a paved plaza in front, so the wet-road look reads
+  // where the player stands.
+  const clubWinMat = new THREE.MeshStandardMaterial({ color: 0x2c3a55, roughness: 0.4, metalness: 0.3, emissive: 0xffffff, emissiveMap: windowAtlas(), emissiveIntensity: 0, side: THREE.DoubleSide });
+  const clubWindows = new THREE.Mesh(
+    new THREE.PlaneGeometry(24, 9),
+    clubWinMat,
+  );
+  clubWindows.position.set(-110, 5, 46.8);
+  clubWindows.rotation.y = Math.PI;
+  scene.add(clubWindows);
+  const plaza = new THREE.Mesh(new THREE.PlaneGeometry(36, 20), roadMat);
+  plaza.rotation.x = -Math.PI / 2; plaza.position.set(-110, 0.05, 38); plaza.receiveShadow = true;
+  scene.add(plaza);
+  // v3: freestanding neon billboards near the club — the night shot had one
+  // neon sign; now the whole street glows.
+  function neonBoard(x, z, w, color, ry = 0) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 7, 6), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+    pole.position.set(x, 3.5, z); pole.castShadow = true; scene.add(pole);
+    const panel = box(w, 2.2, 0.5, 0x111111, x, 8, z, { emissive: color, ei: 2.4 });
+    panel.rotation.y = ry; scene.add(panel);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending }));
+    glow.scale.set(7, 4, 1);
+    glow.position.set(x, 8, z); scene.add(glow);
+  }
+  neonBoard(-88, 38, 9, 0xff2e88, 0.4);
+  neonBoard(-132, 62, 8, 0x00e5ff, -0.5);
+  neonBoard(-96, 74, 7, 0xffd400, 0.2);
 
   // Shops: marked buildings with floating labels.
   for (const s of SHOPS) {
@@ -266,6 +397,16 @@ export function createCity(seed = 7) {
   // Port Vela dock + a moored speedboat hull; street lamps along the avenue.
   // No palms — Vela Cruz is a river port, not a beach. Each lamp gets a glow
   // sprite (so it reads at night) and a wet-road streak plane (rain shots).
+  // v3: each lamp also gets a warm light pool on the ground (night only) —
+  // pools of light are what make a night street read as lit, not black.
+  const poolGeo = new THREE.CircleGeometry(2.4, 18);
+  function addLampPool(x, z) {
+    const pool = new THREE.Mesh(poolGeo, new THREE.MeshBasicMaterial({ color: 0xffdca0, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }));
+    pool.rotation.x = -Math.PI / 2;
+    pool.position.set(x, 0.09, z);
+    scene.add(pool);
+    pools.push(pool);
+  }
   const dock = box(18, 1, 8, 0x6b4a2f, -24, 0.6, 44); scene.add(dock);
   for (let i = 0; i < 10; i += 1) {
     const px = i % 2 === 0 ? -12 : 12;
@@ -286,6 +427,7 @@ export function createCity(seed = 7) {
     streak.position.set(-px, 0.1, pz + 6);
     scene.add(streak);
     streaks.push(streak);
+    addLampPool(-px, pz + 6);
   }
 
   // Two lamps flanking Club Voltage's north face — the club district has no
@@ -307,6 +449,7 @@ export function createCity(seed = 7) {
     streak.position.set(lx, 0.1, lz);
     scene.add(streak);
     streaks.push(streak);
+    addLampPool(lx, lz);
   }
 
   // Port Vela gantry cranes + container stacks — the industrial silhouette
@@ -406,13 +549,30 @@ export function createCity(seed = 7) {
       scene.fog.density = s2.fogD;
       sun.color.setHex(s2.sun);
       sun.intensity = s2.sunI;
-      sun.position.set(-60, s2.sunY, -80);
+      sunYeff = Math.max(s2.sunY, 30); // never light from below the horizon
+      sun.position.set(-60, sunYeff, -80);
       hemi.intensity = s2.amb;
       fill.intensity = s2.fill;
       // Windows glow after dark / before dawn; the atlas does the rest.
-      winMat.emissiveIntensity = (hour >= 19 || hour < 6.5) ? 1.1 : 0;
+      // v3: brighter (1.7) + the club face joins in, and lamp pools + the
+      // player light switch on with the dark.
+      const night = (hour >= 19 || hour < 6.5);
+      winMat.emissiveIntensity = night ? 1.7 : 0;
+      clubWinMat.emissiveIntensity = night ? 1.7 : 0;
+      for (const p of pools) p.material.opacity = night ? 0.32 : (hour >= 17.5 && hour < 19 ? 0.14 : 0);
+      playerLight.intensity = night ? 3.0 : (hour >= 17.5 && hour < 19 ? 0.7 : 0);
       // Water takes the sky + sun so the river mirrors the hour.
       water.setSky(pal.fog, sky.uniforms.uSunDir.value, s2.sun);
+    },
+    /** Keep the sun (and its shadow frustum) centred on the player. */
+    followSun(px, pz) {
+      sun.position.set(px - 78, sunYeff, pz - 104);
+      sun.target.position.set(px, 0, pz);
+      sun.target.updateMatrixWorld();
+    },
+    /** Park the warm player light over the on-foot figure (night shots). */
+    setPlayerLight(x, z) {
+      playerLight.position.set(x, 4.5, z);
     },
     update(dt, t) {
       liftSpan.position.y = -0.1 + Math.max(0, Math.sin(t * 0.15)) * 0.0; // lift span rests down; it rises during the Floodgate Job

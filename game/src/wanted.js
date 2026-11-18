@@ -46,9 +46,10 @@ function policeCarMesh() {
 /** The helicopter. Big airframe, low hover, all the read-as-helicopter parts. */
 export function buildHelicopter() {
   const g = new THREE.Group();
-  // Lighter airframe than v1 (the old navy read as a black slab against the sky).
-  const navy = new THREE.MeshStandardMaterial({ color: 0x52779e, roughness: 0.5, metalness: 0.35 });
-  const bellyMat = new THREE.MeshStandardMaterial({ color: 0x35597e, roughness: 0.6, metalness: 0.2 });
+  // v3.1: lighter airframe — the old navy read as a black slab against the
+  // sky at golden hour / dawn.
+  const navy = new THREE.MeshStandardMaterial({ color: 0x6a8fb5, roughness: 0.5, metalness: 0.35 });
+  const bellyMat = new THREE.MeshStandardMaterial({ color: 0x4a6b94, roughness: 0.6, metalness: 0.2 });
   // Main fuselage + nose + cockpit glass.
   const body = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.0, 6.2), navy);
   body.position.y = 0; g.add(body);

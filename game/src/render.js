@@ -14,7 +14,25 @@ export function createRenderer(canvas, city) {
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.12;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.shadowMap.enabled = false;
+  // v3: real shadows. One directional sun with a tight frustum that follows
+  // the player (see followSun) — this is what makes buildings, cars and the
+  // bridge read as solid instead of flat-shaded boxes. PCF soft, 2048 in
+  // capture mode (still frames), 1024 in live play.
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  const captureShadow = capture ? 2048 : 1024;
+  if (city.sun) {
+    city.sun.castShadow = true;
+    city.sun.shadow.mapSize.set(captureShadow, captureShadow);
+    city.sun.shadow.camera.left = -70;
+    city.sun.shadow.camera.right = 70;
+    city.sun.shadow.camera.top = 70;
+    city.sun.shadow.camera.bottom = -70;
+    city.sun.shadow.camera.near = 10;
+    city.sun.shadow.camera.far = 420;
+    city.sun.shadow.bias = -0.0005;
+    city.sun.shadow.normalBias = 0.6;
+  }
   const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 900);
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -31,6 +49,11 @@ export function createRenderer(canvas, city) {
     render() {
       if (city.water) city.water.update(performance.now() / 1000, camera.position);
       renderer.render(city.scene, camera);
+    },
+    /** Keep the sun's shadow frustum centred on the player, so shadows stay
+     *  crisp where the camera is instead of smeared across the whole city. */
+    followSun(player) {
+      if (city.followSun) city.followSun(player.x, player.z);
     },
     setHour(hour) { city.setHour(hour); },
     setExposure(e) { renderer.toneMappingExposure = e; },

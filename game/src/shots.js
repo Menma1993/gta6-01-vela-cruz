@@ -74,6 +74,7 @@ export function stageShot(name, G) {
   G.city.rain.setOn(false);
   G.city.dust.setOn(true);
   G.city.setWet(false);
+  G.traffic.setNight(false);
   G.pursuitBoats.hide();
   G.wanted.hideUnits(false);
   if (stealCar) stealCar.visible = false;
@@ -91,11 +92,10 @@ export function stageShot(name, G) {
     baseUi(G, save);
     G.ui.location = 'VELA CRUZ · RIVERSIDE · Old Crossing';
     G.ui.dialogue = { ...CHARACTERS.mara, line: 'The whole city in one look — river, bridge, port, downtown.' };
-    stageTrafficNear(G, [[0, 60], [1, -20], [2, 120], [3, -80], [4, 30], [5, -140], [6, 80], [7, -40]], [[0, -11, -30], [1, 11, -48], [2, -11, -62], [3, 11, -20], [4, -11, 80], [5, 11, 100], [6, -11, 120], [7, 11, -100]]);
-    // From the south-east, looking north-west across the city: foreground
-    // port, mid river + bridge, downtown + ridges. Kept low (y=45) so the
-    // mesa top reads as a band at the horizon, not a flat slab.
-    cam = [60, 45, 190, -80, 5, -40];
+    stageTrafficNear(G, [[0, 60], [1, -20], [2, 120], [3, -80], [4, 30], [5, -140], [6, 80], [7, -40], [8, -10], [9, 45], [10, -120], [11, 100]], [[0, -11, -30], [1, 11, -48], [2, -11, -62], [3, 11, -20], [4, -11, 80], [5, 11, 100], [6, -11, 120], [7, 11, -100], [8, -11, -8], [9, 11, 8], [10, -11, 40], [11, 11, 60]]);
+    // v3.3: high SE camera again (v3.1 framing) — with the brighter water
+    // the river wedge past the bridge should now read.
+    cam = [60, 58, 200, -50, 2, -40];
   } else if (name === 'night') {
     // 3 — NIGHT RAIN ON FOOT: over-shoulder close at Neon Mile, wet road
     // lamp streaks, lit windows, muzzle flash, PRESS F – STEAL.
@@ -107,8 +107,10 @@ export function stageShot(name, G) {
     G.city.rain.setOn(true);
     G.city.dust.setOn(false);
     G.city.setWet(true);
+    G.traffic.setNight(true); // headlights + taillights on
     G.player.setMode('foot', -104, 30, -0.24);
     G.player.walk(0, 0, 0, -0.24, G.city.colliders);
+    G.city.setPlayerLight(G.player.x, G.player.z); // warm light over the figure
     G.wanted.setWanted(3);
     G.wanted.setHeli(24, 14, 6); // night: heli further out, cone narrower in frame
     G.weapons.select(2);
@@ -125,8 +127,9 @@ export function stageShot(name, G) {
     stealCar.rotation.y = 2.5; // three-quarter profile to the over-shoulder camera
     stealCar.visible = true;
     stageTrafficNear(G, [[5, 20]], [[0, -118, 30], [1, -100, 24], [2, -90, 34]]);
-    // Aim a touch left so the CLUB VOLTAGE sign clears the VCPD panel.
-    cam = [-96, 3.4, 22, -116, 3, 50];
+    // v3.2: aim right + up — the CLUB VOLTAGE sign shifts left + down in
+    // frame, clear of the VCPD panel.
+    cam = [-96, 3.4, 22, -108, 6, 50];
   } else if (name === 'boat') {
     // 4 — DAWN RIVER CHASE: blue-hour mist, wake + spray, bridge arches
     // overhead, pursuit boats + helicopter. Police cars stay off the water.
@@ -148,8 +151,9 @@ export function stageShot(name, G) {
     G.ui.dialogue = { ...CHARACTERS.nina, line: 'Stay on the river — the VCPD boats cannot turn as fast as us!' };
     G.ui.stolen = true;
     stageTrafficNear(G, [[0, 10], [1, -5]], []);
-    // On the river centreline, above the water: the canyon walls stay at the
-    // frame edges instead of filling it, and the bridge reads ahead.
+    // v3.3: back to the v2 camera — low, on the water, looking down-river.
+    // The v3.1/v3.2 higher cameras put the bank buildings in the sightline
+    // and hid the boat, the pursuit boats and the heli.
     cam = [-56, 8, 2, 25, 1, -2];
   } else {
     // cover — 5-star bridge chase at golden hour, low chase camera.
@@ -168,6 +172,8 @@ export function stageShot(name, G) {
     G.ui.bridgeLift = '0:12';
     stageTrafficNear(G, [[0, -58], [1, -75], [3, -20]], [[0, -11, -30], [1, 11, -48], [2, -11, -62], [3, 11, -20]]);
     G.hud.toast('DRIFT ×3  ·  +$150 NEAR MISS', 60000);
+    // v3.2: back to the v3.0 framing — the closer v3.1 camera made the
+    // Solano GT block the frame and cropped the helicopter.
     cam = [1.5, 3.0, 30, 0, 2.2, -30];
   }
   syncHud(G, lookH, back);
