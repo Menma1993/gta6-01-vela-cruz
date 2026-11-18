@@ -80,22 +80,39 @@ export function stageShot(name, G) {
   if (stealCar) stealCar.visible = false;
 
   if (name === 'wide') {
-    // 1 — WIDE ESTABLISHING: hard early-afternoon light, dust haze, the
-    // whole city in one look — canyon, bridge, port cranes, downtown, river.
-    Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 14.5, complete: 68 });
-    G.city.setHour(14.5);
+    // 1 — WIDE ESTABLISHING, v4: low camera OVER the river looking west
+    // along the water — the river fills the foreground and works (boats,
+    // glint, bridge crossing it), downtown + sunset behind. The v3 high
+    // aerial sold a low-poly demo; the river port has to be IN the frame.
+    // v4.3: golden hour (17.0) made the water amber-brown — same colour as
+    // the walls and ground, so the river didn't read as water at all.
+    // Late morning (10.5) instead: pale-blue sky, the river runs BLUE
+    // against the tan canyon, and the sheet keeps four distinct times
+    // (morning / golden chase / neon night / blue dawn).
+    Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 10.5, complete: 68 });
+    G.city.setHour(10.5);
     G.renderer.setExposure(1.12);
-    G.player.setMode('car', 0, -30, Math.PI / 2);
+    G.player.setMode('car', 0, 8, Math.PI);
     G.player.drive(0, 0, 0, false, G.city.colliders);
     G.wanted.setWanted(0);
     G.wanted.hideUnits(true); // no police cars parked in an establishing shot
     baseUi(G, save);
-    G.ui.location = 'VELA CRUZ · RIVERSIDE · Old Crossing';
+    G.ui.location = 'VELA CRUZ · The River · Old Crossing';
     G.ui.dialogue = { ...CHARACTERS.mara, line: 'The whole city in one look — river, bridge, port, downtown.' };
+    // v4: VCPD river boats working the water west of the bridge, wakes and
+    // all — the river has to look used, not empty.
+    // v4.5: boats at 35–55 m sit below the frame edge / behind the dialogue
+    // panel (the camera looks down 14° from y=40). At 75–95 m they land
+    // mid-water, clear of the HUD, white hulls + wakes on the blue river.
+    G.pursuitBoats.place(0, 45, -4, -Math.PI / 2);
+    G.pursuitBoats.place(1, 25, 6, -Math.PI / 2);
     stageTrafficNear(G, [[0, 60], [1, -20], [2, 120], [3, -80], [4, 30], [5, -140], [6, 80], [7, -40], [8, -10], [9, 45], [10, -120], [11, 100]], [[0, -11, -30], [1, 11, -48], [2, -11, -62], [3, 11, -20], [4, -11, 80], [5, 11, 100], [6, -11, 120], [7, 11, -100], [8, -11, -8], [9, 11, 8], [10, -11, 40], [11, 11, 60]]);
-    // v3.3: high SE camera again (v3.1 framing) — with the brighter water
-    // the river wedge past the bridge should now read.
-    cam = [60, 58, 200, -50, 2, -40];
+    // v4.2: the raised SE camera (v4.1) still hid the river — from above,
+    // the 32 m river is a thin band behind the wall + the central tower.
+    // Now the camera sits OVER the river's east end looking west: the water
+    // is a leading line down the middle of the frame, the bridge crosses it
+    // mid-frame, downtown + sunset beyond, canyon walls framing both sides.
+    cam = [120, 40, 0, -40, 0, -30];
   } else if (name === 'night') {
     // 3 — NIGHT RAIN ON FOOT: over-shoulder close at Neon Mile, wet road
     // lamp streaks, lit windows, muzzle flash, PRESS F – STEAL.
@@ -108,8 +125,8 @@ export function stageShot(name, G) {
     G.city.dust.setOn(false);
     G.city.setWet(true);
     G.traffic.setNight(true); // headlights + taillights on
-    G.player.setMode('foot', -104, 30, -0.24);
-    G.player.walk(0, 0, 0, -0.24, G.city.colliders);
+    G.player.setMode('foot', -99, 37, -0.6);
+    G.player.walk(0, 0, 0, -0.6, G.city.colliders);
     G.city.setPlayerLight(G.player.x, G.player.z); // warm light over the figure
     G.wanted.setWanted(3);
     G.wanted.setHeli(24, 14, 6); // night: heli further out, cone narrower in frame
@@ -123,13 +140,13 @@ export function stageShot(name, G) {
       stealCar = makeCarMesh(0xd94f4f);
       G.city.scene.add(stealCar);
     }
-    stealCar.position.set(-99, 0, 26);
-    stealCar.rotation.y = 2.5; // three-quarter profile to the over-shoulder camera
+    stealCar.position.set(-104, 0, 42);
+    stealCar.rotation.y = 2.6; // three-quarter front toward the camera
     stealCar.visible = true;
     stageTrafficNear(G, [[5, 20]], [[0, -118, 30], [1, -100, 24], [2, -90, 34]]);
-    // v3.2: aim right + up — the CLUB VOLTAGE sign shifts left + down in
-    // frame, clear of the VCPD panel.
-    cam = [-96, 3.4, 22, -108, 6, 50];
+    // v4.3: aim a touch higher (y=4) so the CLUB VOLTAGE sign, just above
+    // the frame edge in v4.2, reads again — the car + player stay centred.
+    cam = [-90, 6.0, 26, -100, 4, 40];
   } else if (name === 'boat') {
     // 4 — DAWN RIVER CHASE: blue-hour mist, wake + spray, bridge arches
     // overhead, pursuit boats + helicopter. Police cars stay off the water.

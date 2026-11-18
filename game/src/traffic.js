@@ -5,10 +5,12 @@ import * as THREE from '../vendor/three.module.min.js';
 
 export function makeCarMesh(color, police = false) {
   const g = new THREE.Group();
-  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.3 });
+  // v4: glossy paint (low roughness + real metalness) so traffic cars catch
+  // a sun streak instead of reading as matte boxes; glass reads as glass.
+  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.28, metalness: 0.55 });
   const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.75, 4.4), bodyMat);
   body.position.y = 0.65; g.add(body);
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 2.2), new THREE.MeshStandardMaterial({ color: 0x18202e, roughness: 0.3, metalness: 0.5 }));
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 2.2), new THREE.MeshStandardMaterial({ color: 0x1d2733, roughness: 0.12, metalness: 0.7 }));
   cabin.position.set(0, 1.3, -0.2); g.add(cabin);
   if (police) {
     const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.2, 4.42), new THREE.MeshStandardMaterial({ color: 0x1a4fd6 }));
@@ -18,9 +20,13 @@ export function makeCarMesh(color, police = false) {
   }
   const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.3, 10);
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
+  const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.32, 8);
+  const hubMat = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, roughness: 0.25, metalness: 0.8 });
   for (const [x, z] of [[-0.95, 1.4], [0.95, 1.4], [-0.95, -1.4], [0.95, -1.4]]) {
     const w = new THREE.Mesh(wheelGeo, wheelMat);
     w.rotation.z = Math.PI / 2; w.position.set(x, 0.42, z); g.add(w);
+    const hub = new THREE.Mesh(hubGeo, hubMat);
+    hub.rotation.z = Math.PI / 2; hub.position.set(x, 0.42, z); g.add(hub);
   }
   // v3: headlights + taillights — emissive lenses plus glow sprites, switched
   // on at night (setNight). A street full of headlights is what makes the

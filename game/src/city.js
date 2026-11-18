@@ -6,7 +6,7 @@
 import * as THREE from '../vendor/three.module.min.js';
 import { WORLD, PALETTE, DISTRICTS, SHOPS, COLLECTIBLES_TOTAL } from './config.js';
 import { createSky, createWater, createRain, createDust, makeGlowTexture, makeStreakTexture } from './atmosphere.js';
-import { facadeTexture, strataTexture, groundTexture } from './textures.js';
+import { facadeTexture, strataTexture, groundTexture, asphaltTexture } from './textures.js';
 
 function box(w, h, d, color, x, y, z, opts = {}) {
   const m = new THREE.Mesh(
@@ -185,9 +185,17 @@ export function createCity(seed = 7) {
 
   // Roads: the north-south avenue (x=0) + east-west streets, with lane dashes.
   // roadMat is shared so setWet() can make every road glossy in one place.
-  const roadMat = new THREE.MeshStandardMaterial({ color: PALETTE.road, roughness: 0.95 });
+  // v4: real asphalt texture (tiled every ~8 m via UV scaling) instead of a
+  // flat grey plane — the road surface is half of every street-level frame.
+  const roadMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, map: asphaltTexture() });
+  function scaleRoadUVs(geo, w, d) {
+    const uv = geo.attributes.uv;
+    for (let i = 0; i < uv.count; i += 1) uv.setXY(i, uv.getX(i) * (w / 8), uv.getY(i) * (d / 8));
+  }
   function road(w, d, x, z) {
-    const r = new THREE.Mesh(new THREE.PlaneGeometry(w, d), roadMat);
+    const geo = new THREE.PlaneGeometry(w, d);
+    scaleRoadUVs(geo, w, d);
+    const r = new THREE.Mesh(geo, roadMat);
     r.rotation.x = -Math.PI / 2; r.position.set(x, 0.06, z); r.receiveShadow = true; scene.add(r);
   }
   road(16, 420, 0, 0); road(420, 14, 0, -60); road(420, 14, 0, 60); road(420, 14, 0, 140); road(14, 420, -90, 0); road(14, 420, 90, 0);
@@ -368,7 +376,9 @@ export function createCity(seed = 7) {
   clubWindows.position.set(-110, 5, 46.8);
   clubWindows.rotation.y = Math.PI;
   scene.add(clubWindows);
-  const plaza = new THREE.Mesh(new THREE.PlaneGeometry(36, 20), roadMat);
+  const plazaGeo = new THREE.PlaneGeometry(36, 20);
+  scaleRoadUVs(plazaGeo, 36, 20);
+  const plaza = new THREE.Mesh(plazaGeo, roadMat);
   plaza.rotation.x = -Math.PI / 2; plaza.position.set(-110, 0.05, 38); plaza.receiveShadow = true;
   scene.add(plaza);
   // v3: freestanding neon billboards near the club — the night shot had one
@@ -385,6 +395,19 @@ export function createCity(seed = 7) {
   neonBoard(-88, 38, 9, 0xff2e88, 0.4);
   neonBoard(-132, 62, 8, 0x00e5ff, -0.5);
   neonBoard(-96, 74, 7, 0xffd400, 0.2);
+  // v4: neon SPILL — real coloured point lights under the signs, so the pink
+  // and cyan wash onto the club face, the parked car and the wet street
+  // instead of the signs being flat glowing rectangles in a black street.
+  const neonLights = [];
+  for (const [color, x, y, z, dist, inten] of [
+    [0xff2e88, -108, 9, 43, 36, 8],
+    [0x00e5ff, -94, 8, 72, 32, 6],
+  ]) {
+    const pl = new THREE.PointLight(color, 0, dist, 1.2);
+    pl.position.set(x, y, z);
+    scene.add(pl);
+    neonLights.push({ light: pl, on: inten });
+  }
 
   // Shops: marked buildings with floating labels.
   for (const s of SHOPS) {
@@ -560,7 +583,9 @@ export function createCity(seed = 7) {
       winMat.emissiveIntensity = night ? 1.7 : 0;
       clubWinMat.emissiveIntensity = night ? 1.7 : 0;
       for (const p of pools) p.material.opacity = night ? 0.32 : (hour >= 17.5 && hour < 19 ? 0.14 : 0);
-      playerLight.intensity = night ? 3.0 : (hour >= 17.5 && hour < 19 ? 0.7 : 0);
+      // v4: neon spill lights live only after dark (with a faint glow at dusk).
+      for (const n of neonLights) n.light.intensity = night ? n.on : (hour >= 17.5 && hour < 19 ? n.on * 0.35 : 0);
+      playerLight.intensity = night ? 4.5 : (hour >= 17.5 && hour < 19 ? 0.7 : 0);
       // Water takes the sky + sun so the river mirrors the hour.
       water.setSky(pal.fog, sky.uniforms.uSunDir.value, s2.sun);
     },

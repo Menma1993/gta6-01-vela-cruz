@@ -6,17 +6,23 @@ import { PLAYER, CAR, BOAT } from './config.js';
 
 function buildCarMesh(color) {
   const g = new THREE.Group();
-  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.8, CAR.length), new THREE.MeshStandardMaterial({ color, roughness: 0.35, metalness: 0.5 }));
+  // v4: glossier hero paint + hubcaps, matching the traffic-car upgrade —
+  // the chase camera lives on this car, so its paint is the game's paint.
+  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.8, CAR.length), new THREE.MeshStandardMaterial({ color, roughness: 0.26, metalness: 0.55 }));
   body.position.y = 0.7; g.add(body);
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 2.0), new THREE.MeshStandardMaterial({ color: 0x141a24, roughness: 0.2, metalness: 0.6 }));
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 2.0), new THREE.MeshStandardMaterial({ color: 0x141a24, roughness: 0.12, metalness: 0.7 }));
   cabin.position.set(0, 1.4, -0.3); g.add(cabin);
   const spoiler = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: 0x141414 }));
   spoiler.position.set(0, 1.25, -2.1); g.add(spoiler);
   const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.32, 10);
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0d0d0d });
+  const hubGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.34, 8);
+  const hubMat = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, roughness: 0.25, metalness: 0.8 });
   for (const [x, z] of [[-1.0, 1.45], [1.0, 1.45], [-1.0, -1.45], [1.0, -1.45]]) {
     const w = new THREE.Mesh(wheelGeo, wheelMat);
     w.rotation.z = Math.PI / 2; w.position.set(x, 0.45, z); g.add(w);
+    const hub = new THREE.Mesh(hubGeo, hubMat);
+    hub.rotation.z = Math.PI / 2; hub.position.set(x, 0.45, z); g.add(hub);
   }
   const lightMat = new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffe9a0, emissiveIntensity: 1.2 });
   for (const x of [-0.7, 0.7]) {

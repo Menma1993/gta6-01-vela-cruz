@@ -121,10 +121,44 @@ export function strataTexture() {
 }
 
 /**
- * Ground atlas (512x512): warm dust with LARGE tonal patches (the v2 speckle
- * alone read as flat tan at distance), faint darker wear where traffic runs,
- * and pebble dots. Tiled 7x7 over the city floor.
+ * Asphalt atlas (256x256): dark grey with dense speckle, a few darker
+ * patches and faint hairline cracks, so roads read as asphalt instead of a
+ * flat grey plane. Tiled every ~8 m via UV scaling at the call site.
  */
+export function asphaltTexture() {
+  const [c, g] = canvas(256, 256);
+  g.fillStyle = '#35353b'; g.fillRect(0, 0, 256, 256);
+  // Darker worn patches.
+  for (let i = 0; i < 22; i += 1) {
+    g.fillStyle = Math.random() < 0.5 ? 'rgba(20,20,24,0.20)' : 'rgba(70,70,78,0.14)';
+    g.beginPath();
+    g.ellipse(Math.random() * 256, Math.random() * 256, 14 + Math.random() * 42, 10 + Math.random() * 30, Math.random() * 3, 0, Math.PI * 2);
+    g.fill();
+  }
+  // Dense aggregate speckle: pale stone chips + dark tar dots.
+  for (let i = 0; i < 5200; i += 1) {
+    const v = Math.random();
+    g.fillStyle = v < 0.45 ? 'rgba(150,150,160,0.20)' : v < 0.8 ? 'rgba(15,15,18,0.22)' : 'rgba(210,205,190,0.10)';
+    g.fillRect(Math.random() * 256, Math.random() * 256, 1 + Math.random() * 2, 1 + Math.random() * 2);
+  }
+  // Hairline cracks: short dark polylines.
+  for (let i = 0; i < 14; i += 1) {
+    g.strokeStyle = 'rgba(12,12,14,0.35)';
+    g.lineWidth = 1;
+    g.beginPath();
+    let x = Math.random() * 256, y = Math.random() * 256;
+    g.moveTo(x, y);
+    for (let s = 0; s < 5; s += 1) { x += (Math.random() - 0.5) * 36; y += (Math.random() - 0.5) * 36; g.lineTo(x, y); }
+    g.stroke();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+
 export function groundTexture() {
   const [c, g] = canvas(512, 512);
   g.fillStyle = '#8a7a5e'; g.fillRect(0, 0, 512, 512);
