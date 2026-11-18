@@ -7,10 +7,10 @@ export function makeCarMesh(color, police = false) {
   const g = new THREE.Group();
   // v4: glossy paint (low roughness + real metalness) so traffic cars catch
   // a sun streak instead of reading as matte boxes; glass reads as glass.
-  const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.28, metalness: 0.55 });
+  const bodyMat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.25, metalness: 0.55, clearcoat: 0.9, clearcoatRoughness: 0.12 });
   const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.75, 4.4), bodyMat);
   body.position.y = 0.65; g.add(body);
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 2.2), new THREE.MeshStandardMaterial({ color: 0x1d2733, roughness: 0.12, metalness: 0.7 }));
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.65, 2.2), new THREE.MeshPhysicalMaterial({ color: 0x1d2733, roughness: 0.08, metalness: 0.8, clearcoat: 1.0 }));
   cabin.position.set(0, 1.3, -0.2); g.add(cabin);
   if (police) {
     const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.2, 4.42), new THREE.MeshStandardMaterial({ color: 0x1a4fd6 }));

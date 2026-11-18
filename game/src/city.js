@@ -37,9 +37,9 @@ function labelSprite(text, color = '#ffd34d', size = 44) {
  *  Golden hour is 17.4 (cover), early afternoon 14.5 is hard pale light,
  *  dawn 6.2 is blue-hour mist, night 23.6 is sodium + cyan. */
 export function skyFor(hour) {
-  if (hour >= 6 && hour < 7.5) return { sky: 0x7d9ab5, fog: 0xc3ccd2, sun: 0xffd9a0, amb: 0.55, sunY: 14, sunI: 1.1, fill: 0.6, fogD: 0.0045 };
+  if (hour >= 6 && hour < 7.5) return { sky: 0x7d9ab5, fog: 0xc3ccd2, sun: 0xffd9a0, amb: 0.62, sunY: 14, sunI: 1.1, fill: 0.6, fogD: 0.0045 };
   if (hour >= 7.5 && hour < 16) return { sky: 0x9fc3d8, fog: 0xc4d2d6, sun: 0xfff2cf, amb: 0.85, sunY: 85, sunI: 1.6, fill: 0.9, fogD: 0.0022 };
-  if (hour >= 16 && hour < 18.5) return { sky: 0xb08a62, fog: 0xcf9a72, sun: 0xffb36b, amb: 0.6, sunY: 24, sunI: 2.0, fill: 0.9, fogD: 0.0028 };
+  if (hour >= 16 && hour < 18.5) return { sky: 0xb08a62, fog: 0xcf9a72, sun: 0xff9d4d, amb: 0.52, sunY: 16, sunI: 2.4, fill: 1.0, fogD: 0.0028 };
   if (hour >= 18.5 && hour < 20) return { sky: 0x8a5a52, fog: 0xb0705e, sun: 0xff8a50, amb: 0.45, sunY: 9, sunI: 1.4, fill: 0.7, fogD: 0.0030 };
   return { sky: 0x0d1730, fog: 0x0d1730, sun: 0x8fa3ff, amb: 0.35, sunY: -20, sunI: 0.5, fill: 0.3, fogD: 0.0035 };
 }
@@ -143,8 +143,10 @@ export function createCity(seed = 7) {
   mast.position.set(120, 25, 40); mast.castShadow = true; scene.add(mast);
   const mastBar = new THREE.Mesh(new THREE.BoxGeometry(6, 0.3, 0.3), new THREE.MeshStandardMaterial({ color: 0x3a3a3a }));
   mastBar.position.set(120, 32, 40); scene.add(mastBar);
-  const billboard = box(14, 6, 0.8, 0x2e7d6b, 150, 17, 20, { emissive: 0x2e7d6b, ei: 0.25 });
+  const billboard = box(20, 8, 0.8, 0xff2f8e, 150, 18, 20, { emissive: 0xff2f8e, ei: 1.6 });
   billboard.rotation.y = 0.5; billboard.castShadow = true; scene.add(billboard);
+  const billboardGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff3fa4, blending: THREE.AdditiveBlending, transparent: true, opacity: 0.85, depthWrite: false }));
+  billboardGlow.position.set(149.4, 18, 18.9); billboardGlow.scale.set(48, 30, 1); scene.add(billboardGlow);
   const billboardLegs = box(1, 3, 1, 0x3a3a3a, 150, 15.5, 20);
   scene.add(billboardLegs);
   const towerLegs = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 8, 6), new THREE.MeshStandardMaterial({ color: 0x4a4a4a }));
@@ -299,7 +301,7 @@ export function createCity(seed = 7) {
   const towers = [
     { x: -34, z: -44, w: 16, d: 16, h: 38 }, { x: 30, z: -46, w: 14, d: 15, h: 30 },
     { x: -30, z: 44, w: 15, d: 14, h: 34 }, { x: 34, z: 42, w: 16, d: 16, h: 44 },
-    { x: 44, z: -84, w: 14, d: 14, h: 28 },
+    { x: 44, z: -84, w: 14, d: 14, h: 28 }, { x: -52, z: -58, w: 13, d: 13, h: 52 },
   ];
   const allSpots = spots.map((p) => ({ ...p, w: 12 + rnd() * 10, d: 12 + rnd() * 10, h: 7 + rnd() * 22 }))
     .concat(towers);
@@ -352,6 +354,11 @@ export function createCity(seed = 7) {
     const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.35, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 2 }));
     beacon.position.set(t.x - 5, t.h + 7.2, t.z + 4); scene.add(beacon);
   }
+  // Landmark spire on the tallest tower — gives the skyline a peak.
+  const spire = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.5, 14, 6), new THREE.MeshStandardMaterial({ color: 0x3a3a42, roughness: 0.7 }));
+  spire.position.set(-52, 52 + 7, -58); scene.add(spire);
+  const spireBeacon = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 3 }));
+  spireBeacon.position.set(-52, 52 + 14.4, -58); scene.add(spireBeacon);
 
   // Neon Mile: Club Voltage + neon signs (emissive boxes that glow at night).
   const club = box(26, 12, 16, 0x241a33, -110, 6, 55); scene.add(club);
@@ -407,6 +414,18 @@ export function createCity(seed = 7) {
     pl.position.set(x, y, z);
     scene.add(pl);
     neonLights.push({ light: pl, on: inten });
+  }
+
+  // v5: wet-only neon reflection streaks on the plaza (pink + cyan).
+  for (const [color, x, z] of [[0xff2e88, -108, 44], [0x00e5ff, -94, 70]]) {
+    const m = new THREE.Mesh(
+      new THREE.PlaneGeometry(3, 16),
+      new THREE.MeshBasicMaterial({ map: streakTex, color, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })
+    );
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(x, 0.08, z);
+    scene.add(m);
+    streaks.push(m);
   }
 
   // Shops: marked buildings with floating labels.
@@ -522,9 +541,10 @@ export function createCity(seed = 7) {
 
   // Distant canyon ridges: flat silhouette layers that melt into the fog so
   // the world keeps going past the last street. (Fog does the depth work.)
-  const ridgeMat = new THREE.MeshBasicMaterial({ color: 0x6b5a48 });
+  const ridgeMats = [0xb99b7c, 0xa68a6f, 0xcbb094, 0x947f68].map((c) => new THREE.MeshBasicMaterial({ color: c }));
+  let ridgeIdx = 0;
   for (const [rx, rz, rw, rh] of [[0, -268, 560, 52], [0, 268, 560, 44], [268, 0, 20, 58], [-268, 0, 20, 48]]) {
-    const ridge = new THREE.Mesh(new THREE.BoxGeometry(rw, rh, 20), ridgeMat);
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(rw, rh, 20), ridgeMats[ridgeIdx++ % 4]);
     ridge.position.set(rx, rh / 2 - 4, rz);
     scene.add(ridge);
   }
@@ -560,9 +580,9 @@ export function createCity(seed = 7) {
     /** Wet roads: glossy dark asphalt + visible lamp streaks. Dry: matte. */
     setWet(on) {
       wet = on;
-      roadMat.roughness = on ? 0.25 : 0.95;
-      roadMat.metalness = on ? 0.55 : 0.05;
-      for (const s of streaks) s.material.opacity = on ? 0.55 : 0;
+      roadMat.roughness = on ? 0.18 : 0.95;
+      roadMat.metalness = on ? 0.7 : 0.05;
+      for (const s of streaks) s.material.opacity = on ? 0.7 : 0;
     },
     setHour(hour) {
       const s2 = skyFor(hour);
@@ -572,7 +592,8 @@ export function createCity(seed = 7) {
       scene.fog.density = s2.fogD;
       sun.color.setHex(s2.sun);
       sun.intensity = s2.sunI;
-      sunYeff = Math.max(s2.sunY, 30); // never light from below the horizon
+      // hour-aware floor: low (long shadows) at golden hour, higher by day
+      sunYeff = Math.max(s2.sunY, hour >= 16 && hour < 18.5 ? 14 : (hour >= 18.5 && hour < 20 ? 20 : 30));
       sun.position.set(-60, sunYeff, -80);
       hemi.intensity = s2.amb;
       fill.intensity = s2.fill;

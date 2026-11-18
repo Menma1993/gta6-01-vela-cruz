@@ -8,10 +8,22 @@ function buildCarMesh(color) {
   const g = new THREE.Group();
   // v4: glossier hero paint + hubcaps, matching the traffic-car upgrade —
   // the chase camera lives on this car, so its paint is the game's paint.
-  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.8, CAR.length), new THREE.MeshStandardMaterial({ color, roughness: 0.26, metalness: 0.55 }));
+  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.8, CAR.length), new THREE.MeshPhysicalMaterial({ color, roughness: 0.22, metalness: 0.55, clearcoat: 1.0, clearcoatRoughness: 0.08 }));
   body.position.y = 0.7; g.add(body);
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 2.0), new THREE.MeshStandardMaterial({ color: 0x141a24, roughness: 0.12, metalness: 0.7 }));
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 2.0), new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.05, metalness: 0.9, clearcoat: 1.0 }));
   cabin.position.set(0, 1.4, -0.3); g.add(cabin);
+  // Dark grille strip across the nose.
+  const grille = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.08), new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.4, metalness: 0.6 }));
+  grille.position.set(0, 0.55, 2.3); g.add(grille);
+  // Chrome side skirts + mirrors on stalks.
+  const chromeMat = new THREE.MeshStandardMaterial({ color: 0xc4c8ce, roughness: 0.2, metalness: 0.9 });
+  const mirrorMat = new THREE.MeshStandardMaterial({ color: 0x141a24, roughness: 0.1, metalness: 0.8 });
+  for (const x of [-1, 1]) {
+    const skirt = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, CAR.length * 0.7), chromeMat);
+    skirt.position.set(x * (CAR.width / 2), 0.4, 0); g.add(skirt);
+    const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.14, 0.12), mirrorMat);
+    mirror.position.set(x * 1.0, 1.35, 0.75); g.add(mirror);
+  }
   const spoiler = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: 0x141414 }));
   spoiler.position.set(0, 1.25, -2.1); g.add(spoiler);
   const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.32, 10);
@@ -38,8 +50,11 @@ function buildCarMesh(color) {
 
 function buildBoatMesh() {
   const g = new THREE.Group();
-  const hull = new THREE.Mesh(new THREE.BoxGeometry(BOAT.width, 0.9, BOAT.length), new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.4, metalness: 0.3 }));
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(BOAT.width, 0.9, BOAT.length), new THREE.MeshPhysicalMaterial({ color: 0x2e7d32, roughness: 0.3, metalness: 0.3, clearcoat: 0.8, clearcoatRoughness: 0.15 }));
   hull.position.y = 0.6; g.add(hull);
+  // Chrome rub rail along the hull top edge.
+  const rail = new THREE.Mesh(new THREE.BoxGeometry(BOAT.width + 0.12, 0.1, BOAT.length), new THREE.MeshStandardMaterial({ color: 0xc4c8ce, roughness: 0.2, metalness: 0.9 }));
+  rail.position.y = 1.0; g.add(rail);
   const deck = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.5, 3.2), new THREE.MeshStandardMaterial({ color: 0xe8e2d0 }));
   deck.position.set(0, 1.2, -0.4); g.add(deck);
   const motor = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.9, 0.5), new THREE.MeshStandardMaterial({ color: 0x141414 }));
