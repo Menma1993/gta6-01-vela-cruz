@@ -281,16 +281,17 @@ export function createWater(scene, half = 210, riverHalf = 16) {
         vec4 cz = chop(p + vec2(0.0, 0.9), t);
         float a = c0.y, b = c0.z, c = c0.w;
 
-        vec2 slope = clamp(vec2(c0.x - cx.x, c0.x - cz.x) * 12.0, -0.55, 0.55);
+        vec2 slope = clamp(vec2(c0.x - cx.x, c0.x - cz.x) * 6.0, -0.55, 0.55); // calmer normals, chop still visible at chase distance
         vec3 N = normalize(vec3(slope.x, 1.0, slope.y));
 
         vec3 V = normalize(uCam - vWorld);
         vec3 L = normalize(uSunDir);
         float ndv = clamp(dot(V, N), 0.0, 1.0);
-        float F = clamp((0.03 + 0.97 * pow(1.0 - ndv, 4.0)) * 1.35, 0.0, 1.0); // grazing = mirror
+        float warm = smoothstep(0.42, 0.10, L.y); // 1 at golden hour, 0 mid-morning
+        // Cap Fresnel by hour: morning ~0.55 (blue body shows), golden ~0.85
+        float F = clamp((0.03 + 0.97 * pow(1.0 - ndv, 4.0)) * 1.35, 0.0, mix(0.55, 0.85, warm)); // hour-aware mirror cap
         vec3 R = reflect(-V, N);
         float sd = max(dot(R, L), 0.0);
-        float warm = smoothstep(0.42, 0.10, L.y); // 1 at golden hour, 0 mid-morning
 
         vec3 body = uDeep * vec3(0.80, 1.02, 1.18); // blue bias, never amber
         body *= 0.86 + 0.34 * b;                    // mottled depth at 30-80 m
@@ -308,14 +309,16 @@ export function createWater(scene, half = 210, riverHalf = 16) {
         // broken glitter lane toward the sun: broad glow, sheen, hard hits
         float laneF = 0.28 + 0.72 * smoothstep(0.34, 0.78, lane);
         vec3 glintCol = mix(uSunColor, vec3(1.0), 0.35);
-        col += glintCol * pow(sd, 7.0) * 0.16;
-        col += glintCol * pow(sd, 45.0) * 0.85 * laneF;
-        col += glintCol * pow(sd, 320.0) * 4.6 * laneF;
+        float glintT = 0.10 + 0.90 * warm;        // dawn 0.10, gold 1.0: sun lane tint only
+        float glintH = glintT * glintT;           // hard hits gate quadratically, so dawn ~0
+        col += glintCol * pow(sd, 7.0) * 0.10 * laneF;                    // soft sun lane, dawn-safe
+        col += glintCol * pow(sd, 45.0) * 0.30 * laneF * glintT;          // warm sheen on the lane
+        col += glintCol * pow(sd, 320.0) * 0.45 * laneF * glintH;         // hard core: gold only
 
         // sparkle pinpricks: low enough frequency to survive chase-cam range
         float sp = smoothstep(0.58, 0.94, a * b * 2.3);
-        col += glintCol * sp * pow(sd, 3.0) * 2.2 * (0.35 + 0.85 * F);
-        col += glintCol * smoothstep(0.66, 0.96, b * c * 2.1) * pow(sd, 6.0) * 1.2;
+        col += glintCol * sp * pow(sd, 3.0) * 0.45 * (0.35 + 0.85 * F) * glintH;
+        col += glintCol * smoothstep(0.66, 0.96, b * c * 2.1) * pow(sd, 6.0) * 0.30 * glintH;
 
         // shore foam: irregular width and breakup instead of a painted line
         float fn = texture2D(uNoise, vec2(p.x * 0.16 - t * 0.025, p.y * 1.10 + 0.37)).r;

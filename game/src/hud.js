@@ -92,6 +92,8 @@ export function createHud() {
     toast(msg, ms = 2200) {
       const el = $('toast');
       el.textContent = msg;
+      el.style.top = '14%';          // anchor near top, clear of the centre-frame hero car
+      el.style.bottom = 'auto';
       el.style.display = 'block';
       if (toastTimer) clearTimeout(toastTimer);
       toastTimer = setTimeout(() => { el.style.display = 'none'; }, ms);

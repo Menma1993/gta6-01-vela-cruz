@@ -34,6 +34,31 @@ export function createRenderer(canvas, city) {
     city.sun.shadow.normalBias = 0.6;
   }
   const camera = new THREE.PerspectiveCamera(62, window.innerWidth / window.innerHeight, 0.1, 900);
+
+  // --- Environment / IBL from the sky dome ---------------------------------
+  // PMREM pre-filters the sky into the roughness mips used by
+  // scene.environment. We render a clone of the dome (fromScene needs a
+  // scene with ONLY the dome) so we never disturb the main scene graph.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  pmrem.compileEquirectangularShader();
+  const envScene = new THREE.Scene();
+  const envDome = city.sky.mesh.clone();          // clone, don't remove the real one
+  envDome.material = city.sky.mesh.material;      // share the live ShaderMaterial (same uniforms)
+  envScene.add(envDome);
+  let envRT = null;
+  let envHour = null; // last hour the env was generated for
+  function updateEnv(hour) {
+    // The dome's shader uniforms were already updated by city.setHour(hour),
+    // so rendering it now captures the current hour's sky. Regenerate only
+    // when the hour moved enough to matter (the game loop calls setHour
+    // every frame; a PMREM gen per frame would tank it).
+    if (hour !== undefined && envHour !== null && Math.abs(hour - envHour) < 0.1) return;
+    if (envRT) envRT.dispose();
+    envRT = pmrem.fromScene(envScene);
+    city.scene.environment = envRT.texture;
+    if (hour !== undefined) envHour = hour;
+  }
+  updateEnv(); // boot: matches whatever hour city started at
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -55,7 +80,10 @@ export function createRenderer(canvas, city) {
     followSun(player) {
       if (city.followSun) city.followSun(player.x, player.z);
     },
-    setHour(hour) { city.setHour(hour); },
+    setHour(hour) { city.setHour(hour); updateEnv(hour); },
+    /** Regenerate scene.environment from the sky dome (called by the
+     *  city.setHour wrapper in main.js, since staging calls that directly). */
+    updateEnv(hour) { updateEnv(hour); },
     setExposure(e) { renderer.toneMappingExposure = e; },
     /** Free camera for staged wide shots: position + aim, locked until follow/snap. */
     setCam(x, y, z, lx, ly, lz) {

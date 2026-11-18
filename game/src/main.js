@@ -37,6 +37,11 @@ const weapons = createWeapons(city.scene);
 const radio = createRadio();
 const hud = createHud();
 const renderer = createRenderer(canvas, city);
+// Staging (?shot=) calls G.city.setHour directly, bypassing renderer's
+// setHour — wrap it so every hour change also refreshes scene.environment.
+// The 0.1 h guard inside updateEnv keeps the per-frame game-loop calls cheap.
+const citySetHour = city.setHour.bind(city);
+city.setHour = (hour) => { citySetHour(hour); renderer.updateEnv(hour); };
 
 let save = ensureSave();
 let story = createStory(save);

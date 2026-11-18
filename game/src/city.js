@@ -189,7 +189,13 @@ export function createCity(seed = 7) {
   // roadMat is shared so setWet() can make every road glossy in one place.
   // v4: real asphalt texture (tiled every ~8 m via UV scaling) instead of a
   // flat grey plane — the road surface is half of every street-level frame.
-  const roadMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, map: asphaltTexture() });
+  const roadMat = new THREE.MeshStandardMaterial({
+    color: 0xffffff,
+    roughness: 0.95,
+    metalness: 0.0,          // never metallic — avoids the "flat dark brown" crush
+    envMapIntensity: 0.0,    // no sky reflection while dry
+    map: asphaltTexture(),
+  });
   function scaleRoadUVs(geo, w, d) {
     const uv = geo.attributes.uv;
     for (let i = 0; i < uv.count; i += 1) uv.setXY(i, uv.getX(i) * (w / 8), uv.getY(i) * (d / 8));
@@ -580,8 +586,9 @@ export function createCity(seed = 7) {
     /** Wet roads: glossy dark asphalt + visible lamp streaks. Dry: matte. */
     setWet(on) {
       wet = on;
-      roadMat.roughness = on ? 0.18 : 0.95;
-      roadMat.metalness = on ? 0.7 : 0.05;
+      roadMat.roughness = on ? 0.28 : 0.95;   // glossy-but-not-mirror when wet
+      roadMat.metalness = 0.0;                // keep dielectric in both states
+      roadMat.envMapIntensity = on ? 1.2 : 0.0; // sunset sky reflects only when wet
       for (const s of streaks) s.material.opacity = on ? 0.7 : 0;
     },
     setHour(hour) {

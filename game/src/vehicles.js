@@ -8,9 +8,9 @@ function buildCarMesh(color) {
   const g = new THREE.Group();
   // v4: glossier hero paint + hubcaps, matching the traffic-car upgrade —
   // the chase camera lives on this car, so its paint is the game's paint.
-  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.8, CAR.length), new THREE.MeshPhysicalMaterial({ color, roughness: 0.22, metalness: 0.55, clearcoat: 1.0, clearcoatRoughness: 0.08 }));
+  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.8, CAR.length), new THREE.MeshPhysicalMaterial({ color, roughness: 0.3, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.12, envMapIntensity: 0.6 }));
   body.position.y = 0.7; g.add(body);
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 2.0), new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.05, metalness: 0.9, clearcoat: 1.0 }));
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 2.0), new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.08, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 0.5 }));
   cabin.position.set(0, 1.4, -0.3); g.add(cabin);
   // Dark grille strip across the nose.
   const grille = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.08), new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.4, metalness: 0.6 }));
@@ -42,7 +42,7 @@ function buildCarMesh(color) {
     l.position.set(x, 0.75, 2.31); g.add(l);
   }
   // Red rear light bar — the chase camera mostly sees the back of the car.
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 0.1), new THREE.MeshStandardMaterial({ color: 0xaa1111, emissive: 0xff2222, emissiveIntensity: 1.4 }));
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 0.1), new THREE.MeshPhysicalMaterial({ color: 0xaa1111, roughness: 0.15, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.06, emissive: 0xff2222, emissiveIntensity: 0.8, envMapIntensity: 1.0 }));
   tail.position.set(0, 0.85, -2.31); g.add(tail);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; }); // v3: real shadows
   return g;

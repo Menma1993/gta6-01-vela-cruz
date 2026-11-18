@@ -112,7 +112,7 @@ export function stageShot(name, G) {
     // Now the camera sits OVER the river's east end looking west: the water
     // is a leading line down the middle of the frame, the bridge crosses it
     // mid-frame, downtown + sunset beyond, canyon walls framing both sides.
-    cam = [120, 40, 0, -40, 0, -30];
+    cam = [110, 14, 2, -30, 3, -6];
   } else if (name === 'night') {
     // 3 — NIGHT RAIN ON FOOT: over-shoulder close at Neon Mile, wet road
     // lamp streaks, lit windows, muzzle flash, PRESS F – STEAL.
@@ -187,11 +187,11 @@ export function stageShot(name, G) {
     G.ui.dialogue = { ...CHARACTERS.mara, line: 'Lose that helicopter before you bring the money to my garage!' };
     G.ui.stolen = true;
     G.ui.bridgeLift = '0:12';
-    stageTrafficNear(G, [[0, -58], [1, -75], [3, -20]], [[0, -11, -30], [1, 11, -48], [2, -11, -62], [3, 11, -20]]);
-    G.hud.toast('DRIFT ×3  ·  +$150 NEAR MISS', 60000);
-    // v3.2: back to the v3.0 framing — the closer v3.1 camera made the
-    // Solano GT block the frame and cropped the helicopter.
-    cam = [1.5, 3.0, 30, 0, 2.2, -30];
+    G.city.setWet(true);
+    stageTrafficNear(G, [[0, -58], [1, -75]], [[0, -11, -30], [1, 11, -48], [2, -11, -62]]);
+    G.hud.toast('DRIFT ×3  ·  +$150 NEAR MISS', 2500);
+    // v5: ~8.7 m behind, slightly lower — bigger hero car, heli still in frame.
+    cam = [1.5, 2.7, 26.7, 0, 2.2, -30];
   }
   syncHud(G, lookH, back);
   if (cam) G.renderer.setCam(...cam);

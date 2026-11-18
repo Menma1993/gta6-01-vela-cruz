@@ -20,7 +20,7 @@ import { buildDossier } from './vendor/makefun-game.ts';
 // Vela Cruz — authored entry metadata and pre-flight checks (v3 visual revision).
 const VELA_CRUZ = {
   name: 'Vela Cruz',
-  version: '1.5.0',
+  version: '1.5.1',
   city: 'Vela Cruz — river-canyon open-world crime game',
   shots: ['1-wide.jpg', '2-cover.jpg', '3-night.jpg', '4-boat.jpg'],
 } as const;
