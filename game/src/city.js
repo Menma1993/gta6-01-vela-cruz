@@ -5,6 +5,7 @@
 // Neon Mile (west, the club strip), Ironworks (north-east).
 import * as THREE from '../vendor/three.module.min.js';
 import { WORLD, PALETTE, DISTRICTS, SHOPS, COLLECTIBLES_TOTAL } from './config.js';
+import { createSky, createWater, createRain, createDust, makeGlowTexture, makeStreakTexture } from './atmosphere.js';
 
 function box(w, h, d, color, x, y, z, opts = {}) {
   const m = new THREE.Mesh(
@@ -30,12 +31,58 @@ function labelSprite(text, color = '#ffd34d', size = 44) {
   return sp;
 }
 
-/** Sky + sun colours for an hour of day (golden hour 17.4, night 23.6, sunset 18.0). */
+/** Sun + light values for an hour of day. The sky dome owns the colours;
+ *  this drives the lights so faces toward the camera stay lit, not black.
+ *  Golden hour is 17.4 (cover), early afternoon 14.5 is hard pale light,
+ *  dawn 6.2 is blue-hour mist, night 23.6 is sodium + cyan. */
 export function skyFor(hour) {
-  if (hour >= 6 && hour < 16) return { sky: 0x87b5d6, fog: 0x9fc3d8, sun: 0xfff2cf, amb: 0.8, sunY: 90, sunI: 1.7, fill: 0.9 };
-  if (hour >= 16 && hour < 18.5) return { sky: 0xf2a35e, fog: 0xe89a5e, sun: 0xffb36b, amb: 0.7, sunY: 26, sunI: 2.3, fill: 1.0 };
-  if (hour >= 18.5 && hour < 20) return { sky: 0xd96a4e, fog: 0xc96a55, sun: 0xff8a50, amb: 0.5, sunY: 10, sunI: 1.6, fill: 0.8 };
-  return { sky: 0x0b1026, fog: 0x0b1026, sun: 0x8fa3ff, amb: 0.38, sunY: -20, sunI: 0.7, fill: 0.35 };
+  if (hour >= 6 && hour < 7.5) return { sky: 0x7d9ab5, fog: 0xc3ccd2, sun: 0xffd9a0, amb: 0.55, sunY: 14, sunI: 1.1, fill: 0.6, fogD: 0.0045 };
+  if (hour >= 7.5 && hour < 16) return { sky: 0x9fc3d8, fog: 0xc4d2d6, sun: 0xfff2cf, amb: 0.85, sunY: 85, sunI: 1.6, fill: 0.9, fogD: 0.0022 };
+  if (hour >= 16 && hour < 18.5) return { sky: 0xb08a62, fog: 0xcf9a72, sun: 0xffb36b, amb: 0.6, sunY: 24, sunI: 2.0, fill: 0.9, fogD: 0.0028 };
+  if (hour >= 18.5 && hour < 20) return { sky: 0x8a5a52, fog: 0xb0705e, sun: 0xff8a50, amb: 0.45, sunY: 9, sunI: 1.4, fill: 0.7, fogD: 0.0030 };
+  return { sky: 0x0d1730, fog: 0x0d1730, sun: 0x8fa3ff, amb: 0.35, sunY: -20, sunI: 0.5, fill: 0.3, fogD: 0.0035 };
+}
+
+/** Ground speckle: warm dust with darker patches, so the dirt reads as dirt. */
+function groundTexture() {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 512;
+  const g = c.getContext('2d');
+  g.fillStyle = '#8a7a5e'; g.fillRect(0, 0, 512, 512);
+  for (let i = 0; i < 5200; i += 1) {
+    const v = Math.random();
+    g.fillStyle = v < 0.5 ? 'rgba(60,45,28,0.16)' : 'rgba(210,190,150,0.12)';
+    const r = 1 + Math.random() * 3;
+    g.beginPath(); g.arc(Math.random() * 512, Math.random() * 512, r, 0, Math.PI * 2); g.fill();
+  }
+  for (let i = 0; i < 26; i += 1) {
+    g.fillStyle = 'rgba(70,52,32,0.10)';
+    g.beginPath(); g.ellipse(Math.random() * 512, Math.random() * 512, 20 + Math.random() * 50, 14 + Math.random() * 30, Math.random() * 3, 0, Math.PI * 2); g.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = THREE.RepeatWrapping; tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(7, 7);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** Window atlas: a grid of windows, some lit warm, some dark — the emissive
+ *  map every building window strip shares. At night it lights the city. */
+function windowAtlas() {
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#10151f'; g.fillRect(0, 0, 128, 256);
+  for (let y = 8; y < 248; y += 22) {
+    for (let x = 8; x < 120; x += 18) {
+      const lit = Math.random() < 0.42;
+      g.fillStyle = lit ? (Math.random() < 0.75 ? '#ffc46a' : '#9fd8ef') : '#1a2230';
+      g.fillRect(x, y, 12, 14);
+    }
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
 }
 
 export function createCity(seed = 7) {
@@ -43,8 +90,10 @@ export function createCity(seed = 7) {
   const rnd = () => { s = (s * 1664525 + 1013904223) | 0; return ((s >>> 0) / 4294967296); };
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xf2a35e);
-  scene.fog = new THREE.Fog(0xe89a5e, 120, 420);
+  // The sky dome owns the background; the scene colour is only a fallback.
+  scene.background = new THREE.Color(0x9fc3d8);
+  scene.fog = new THREE.FogExp2(0xc4d2d6, 0.0022);
+  const sky = createSky(scene);
 
   const hemi = new THREE.HemisphereLight(0xffe0b3, 0x4a3a28, 0.6);
   scene.add(hemi);
@@ -62,12 +111,33 @@ export function createCity(seed = 7) {
   const colliders = []; // {x0,z0,x1,z1} building footprints the car cannot cross
   const shells = []; // collectible Sun Shells {x,z,mesh,taken}
   const lamps = [];
+  const streaks = []; // wet-road lamp streaks (visible only when wet)
 
-  // Ground: west bank sand, east bank mesa clay, canyon walls along the river.
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD.half * 2, WORLD.half * 2), new THREE.MeshStandardMaterial({ color: PALETTE.ground, roughness: 1 }));
+  // Atmosphere pieces this city owns: shader river, rain, dust, glow sprites.
+  const water = createWater(scene, WORLD.half, WORLD.riverHalf);
+  const glowTex = makeGlowTexture();
+  const streakTex = makeStreakTexture();
+  const rain = createRain(scene, streakTex);
+  const dust = createDust(scene, glowTex);
+
+  // Ground: speckled dirt, not a flat brown plane.
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(WORLD.half * 2, WORLD.half * 2), new THREE.MeshStandardMaterial({ map: groundTexture(), roughness: 1 }));
   ground.rotation.x = -Math.PI / 2; scene.add(ground);
   const mesa = box(150, 14, 130, 0x9c6b4a, 135, 7, 55); scene.add(mesa);
   colliders.push({ x0: 60, z0: -10, x1: 210, z1: 120 });
+  // Mesa Verde shanties + a water tower on the mesa top — the flat top read
+  // as an empty orange slab from any high camera; structures break it up.
+  const mesaTop = [
+    [10, 6, 8, 0x8a6a4a, 90, 17, 20], [8, 5, 10, 0x7a5a3c, 150, 16.5, 60],
+    [7, 4, 6, 0xb98a5a, 70, 16, 0], [9, 5, 7, 0x8a6a4a, 180, 16.5, 100],
+    [6, 4, 6, 0x6b4a2f, 110, 16, 100], [3, 2, 3, 0x6b4a2f, 95, 15, 80],
+    [4, 2.5, 3, 0x6b4a2f, 165, 15.2, 30], [3, 2, 4, 0x6b4a2f, 130, 15, 10],
+  ];
+  for (const [w, h, d, c, x, y, z] of mesaTop) scene.add(box(w, h, d, c, x, y, z));
+  const towerLegs = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 8, 6), new THREE.MeshStandardMaterial({ color: 0x4a4a4a }));
+  towerLegs.position.set(120, 18, 90); scene.add(towerLegs);
+  const towerTank = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 4, 10), new THREE.MeshStandardMaterial({ color: 0x7d9ab5, roughness: 0.6, metalness: 0.3 }));
+  towerTank.position.set(120, 24, 90); scene.add(towerTank);
   // Canyon walls line both river banks (z = ±26), with a gap at the bridge (x = 0).
   for (const wz of [-26, 26]) {
     for (const [x0, x1] of [[-210, -10], [10, 210]]) {
@@ -77,19 +147,23 @@ export function createCity(seed = 7) {
     }
   }
 
-  // River: a wide blue band east-west, just below road level, with a lighter current stripe.
-  const river = new THREE.Mesh(new THREE.PlaneGeometry(WORLD.half * 2, WORLD.riverHalf * 2), new THREE.MeshStandardMaterial({ color: 0x3a8a9e, roughness: 0.25, metalness: 0.35 }));
-  river.rotation.x = -Math.PI / 2; river.position.y = 0.02; scene.add(river);
-  const current = new THREE.Mesh(new THREE.PlaneGeometry(WORLD.half * 2, 3), new THREE.MeshStandardMaterial({ color: 0x7fc4d4, roughness: 0.2, metalness: 0.4 }));
-  current.rotation.x = -Math.PI / 2; current.position.y = 0.05; scene.add(current);
-
   // Roads: the north-south avenue (x=0) + east-west streets, with lane dashes.
+  // roadMat is shared so setWet() can make every road glossy in one place.
   const roadMat = new THREE.MeshStandardMaterial({ color: PALETTE.road, roughness: 0.95 });
   function road(w, d, x, z) {
     const r = new THREE.Mesh(new THREE.PlaneGeometry(w, d), roadMat);
     r.rotation.x = -Math.PI / 2; r.position.set(x, 0.06, z); scene.add(r);
   }
   road(16, 420, 0, 0); road(420, 14, 0, -60); road(420, 14, 0, 60); road(420, 14, 0, 140); road(14, 420, -90, 0); road(14, 420, 90, 0);
+  // Sidewalks: pale strips flanking the avenue + the two main cross streets.
+  const walkMat = new THREE.MeshStandardMaterial({ color: 0x9a8a6e, roughness: 1 });
+  function walk(w, d, x, z) {
+    const r = new THREE.Mesh(new THREE.PlaneGeometry(w, d), walkMat);
+    r.rotation.x = -Math.PI / 2; r.position.set(x, 0.07, z); scene.add(r);
+  }
+  walk(3, 400, -9.5, 0); walk(3, 400, 9.5, 0);
+  walk(400, 3, 0, -68.5); walk(400, 3, 0, -51.5);
+  walk(400, 3, 0, 51.5); walk(400, 3, 0, 68.5);
   const dashMat = new THREE.MeshBasicMaterial({ color: 0xd8d8d8 });
   for (let z = -200; z < 200; z += 12) {
     if (Math.abs(z) < 24) continue; // the bridge has its own markings
@@ -117,6 +191,8 @@ export function createCity(seed = 7) {
   bridgeSign.position.set(0, 19, -34); scene.add(bridgeSign);
 
   // Buildings: seeded low-poly blocks along the streets, kept off roads/river.
+  // One InstancedMesh for all facades (instanceColor per district palette)
+  // and one for the window strips — two draw calls instead of ~80.
   const spots = [];
   for (let i = 0; i < 90; i += 1) {
     const x = -195 + rnd() * 390;
@@ -128,16 +204,43 @@ export function createCity(seed = 7) {
     if (spots.some((p) => Math.hypot(p.x - x, p.z - z) < 26)) continue;
     spots.push({ x, z });
   }
-  const winMat = new THREE.MeshStandardMaterial({ color: 0x2c3a55, roughness: 0.4, metalness: 0.3, emissive: 0xffca6a, emissiveIntensity: 0 });
-  for (const p of spots) {
-    const w = 12 + rnd() * 10, d = 12 + rnd() * 10, h = 7 + rnd() * 22;
-    const color = PALETTE.building[Math.floor(rnd() * PALETTE.building.length)];
-    const b = box(w, h, d, color, p.x, h / 2, p.z);
-    scene.add(b);
-    const win = box(w * 0.7, h * 0.55, 0.3, 0x2c3a55, p.x, h * 0.55, p.z + d / 2 + 0.15);
-    win.material = winMat; scene.add(win);
-    colliders.push({ x0: p.x - w / 2, z0: p.z - d / 2, x1: p.x + w / 2, z1: p.z + d / 2 });
+  // Downtown towers: a taller cluster near the bridge so the skyline reads.
+  const towers = [
+    { x: -34, z: -44, w: 16, d: 16, h: 38 }, { x: 30, z: -46, w: 14, d: 15, h: 30 },
+    { x: -30, z: 44, w: 15, d: 14, h: 34 }, { x: 34, z: 42, w: 16, d: 16, h: 44 },
+    { x: 44, z: -84, w: 14, d: 14, h: 28 },
+  ];
+  const allSpots = spots.map((p) => ({ ...p, w: 12 + rnd() * 10, d: 12 + rnd() * 10, h: 7 + rnd() * 22 }))
+    .concat(towers);
+  const unitBox = new THREE.BoxGeometry(1, 1, 1);
+  const facadeMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9, metalness: 0.05 });
+  const facades = new THREE.InstancedMesh(unitBox, facadeMat, allSpots.length);
+  const winMat = new THREE.MeshStandardMaterial({
+    color: 0x2c3a55, roughness: 0.4, metalness: 0.3,
+    emissive: 0xffffff, emissiveMap: windowAtlas(), emissiveIntensity: 0,
+  });
+  const windows = new THREE.InstancedMesh(unitBox, winMat, allSpots.length);
+  {
+    const m4 = new THREE.Matrix4();
+    const q = new THREE.Quaternion();
+    const pos = new THREE.Vector3();
+    const sc = new THREE.Vector3();
+    const col = new THREE.Color();
+    allSpots.forEach((p, i) => {
+      const color = PALETTE.building[Math.floor(rnd() * PALETTE.building.length)];
+      pos.set(p.x, p.h / 2, p.z); sc.set(p.w, p.h, p.d);
+      m4.compose(pos, q, sc); facades.setMatrixAt(i, m4);
+      facades.setColorAt(i, col.setHex(color));
+      pos.set(p.x, p.h * 0.55, p.z + p.d / 2 + 0.15); sc.set(p.w * 0.7, p.h * 0.55, 0.3);
+      m4.compose(pos, q, sc); windows.setMatrixAt(i, m4);
+      colliders.push({ x0: p.x - p.w / 2, z0: p.z - p.d / 2, x1: p.x + p.w / 2, z1: p.z + p.d / 2 });
+    });
+    facades.instanceMatrix.needsUpdate = true;
+    if (facades.instanceColor) facades.instanceColor.needsUpdate = true;
+    windows.instanceMatrix.needsUpdate = true;
   }
+  scene.add(facades);
+  scene.add(windows);
 
   // Neon Mile: Club Voltage + neon signs (emissive boxes that glow at night).
   const club = box(26, 12, 16, 0x241a33, -110, 6, 55); scene.add(club);
@@ -160,20 +263,104 @@ export function createCity(seed = 7) {
     lab.position.set(s.x, 10.5, s.z); scene.add(lab);
   }
 
-  // Port Vela dock + a moored speedboat hull; palms and lamps along the avenue.
+  // Port Vela dock + a moored speedboat hull; street lamps along the avenue.
+  // No palms — Vela Cruz is a river port, not a beach. Each lamp gets a glow
+  // sprite (so it reads at night) and a wet-road streak plane (rain shots).
   const dock = box(18, 1, 8, 0x6b4a2f, -24, 0.6, 44); scene.add(dock);
   for (let i = 0; i < 10; i += 1) {
     const px = i % 2 === 0 ? -12 : 12;
     const pz = -160 + i * 36;
-    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.5, 7, 6), new THREE.MeshStandardMaterial({ color: 0x6b4a2f }));
-    trunk.position.set(px, 3.5, pz); scene.add(trunk);
-    const top = new THREE.Mesh(new THREE.ConeGeometry(3.2, 4.5, 7), new THREE.MeshStandardMaterial({ color: 0x3f7d3a }));
-    top.position.set(px, 8.5, pz); scene.add(top);
-    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 6, 6), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 6, 6), new THREE.MeshStandardMaterial({ color: 0x222222 }));
     pole.position.set(-px, 3, pz + 6); scene.add(pole);
     const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 8), new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffdca0, emissiveIntensity: 1.6 }));
     lamp.position.set(-px, 6.2, pz + 6); scene.add(lamp);
     lamps.push(lamp);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffdca0, transparent: true, opacity: 0.55, depthWrite: false }));
+    glow.scale.set(4.5, 4.5, 1);
+    glow.position.set(-px, 6.2, pz + 6); scene.add(glow);
+    const streak = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.1, 7),
+      new THREE.MeshBasicMaterial({ map: streakTex, color: 0xffdca0, transparent: true, opacity: 0.0, depthWrite: false, side: THREE.DoubleSide }),
+    );
+    streak.rotation.x = -Math.PI / 2;
+    streak.position.set(-px, 0.1, pz + 6);
+    scene.add(streak);
+    streaks.push(streak);
+  }
+
+  // Two lamps flanking Club Voltage's north face — the club district has no
+  // avenue lamps, and without them the night shot is a black wall.
+  for (const [lx, lz] of [[-100, 40], [-120, 40]]) {
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 6, 6), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+    pole.position.set(lx, 3, lz); scene.add(pole);
+    const lamp = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 8), new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffdca0, emissiveIntensity: 1.6 }));
+    lamp.position.set(lx, 6.2, lz); scene.add(lamp);
+    lamps.push(lamp);
+    const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffdca0, transparent: true, opacity: 0.55, depthWrite: false }));
+    glow.scale.set(4.5, 4.5, 1);
+    glow.position.set(lx, 6.2, lz); scene.add(glow);
+    const streak = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.1, 7),
+      new THREE.MeshBasicMaterial({ map: streakTex, color: 0xffdca0, transparent: true, opacity: 0.0, depthWrite: false, side: THREE.DoubleSide }),
+    );
+    streak.rotation.x = -Math.PI / 2;
+    streak.position.set(lx, 0.1, lz);
+    scene.add(streak);
+    streaks.push(streak);
+  }
+
+  // Port Vela gantry cranes + container stacks — the industrial silhouette
+  // that says "working river port" in one glance from the wide shot.
+  function gantryCrane(x, z, ry = 0) {
+    const g = new THREE.Group();
+    const steel = new THREE.MeshStandardMaterial({ color: 0xc96a2e, roughness: 0.6, metalness: 0.4 });
+    for (const lx of [-6, 6]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(1.6, 19, 1.6), steel);
+      leg.position.set(lx, 9.5, 0); g.add(leg);
+    }
+    const beam = new THREE.Mesh(new THREE.BoxGeometry(15, 1.6, 2.2), steel);
+    beam.position.set(0, 19, 0); g.add(beam);
+    const jib = new THREE.Mesh(new THREE.BoxGeometry(20, 1.2, 1.6), steel);
+    jib.position.set(8, 19.5, 0); g.add(jib);
+    const cable = new THREE.Mesh(new THREE.BoxGeometry(0.25, 7, 0.25), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+    cable.position.set(14, 15.5, 0); g.add(cable);
+    const hook = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.6, 1.6), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+    hook.position.set(14, 11.5, 0); g.add(hook);
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(3, 2.4, 2.6), new THREE.MeshStandardMaterial({ color: 0x2e7d6b }));
+    cab.position.set(0, 17, 0); g.add(cab);
+    g.position.set(x, 0, z);
+    g.rotation.y = ry;
+    scene.add(g);
+    return g;
+  }
+  gantryCrane(-72, 132, 0.35);
+  gantryCrane(48, 138, -0.3);
+  const containerColors = [0xc96a2e, 0x2e7d6b, 0x8a4a4a, 0x4a6b8a, 0xb98a2e];
+  function containerStack(x, z, rows, cols) {
+    for (let r = 0; r < rows; r += 1) {
+      for (let c = 0; c < cols; c += 1) {
+        const m = box(6, 2.6, 2.6, containerColors[(r * cols + c) % containerColors.length], x + c * 6.4, 1.3 + r * 2.7, z);
+        scene.add(m);
+      }
+    }
+    colliders.push({ x0: x - 3, z0: z - 2, x1: x + cols * 6.4, z1: z + 2 });
+  }
+  containerStack(-96, 118, 2, 4);
+  containerStack(62, 122, 3, 3);
+  containerStack(-40, 150, 2, 3);
+  // Ironworks silos (north-east).
+  for (const [sx, sz] of [[118, 148], [128, 148]]) {
+    const silo = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 16, 10), new THREE.MeshStandardMaterial({ color: 0x8a7a5e, roughness: 0.8, metalness: 0.2 }));
+    silo.position.set(sx, 8, sz); scene.add(silo);
+  }
+
+  // Distant canyon ridges: flat silhouette layers that melt into the fog so
+  // the world keeps going past the last street. (Fog does the depth work.)
+  const ridgeMat = new THREE.MeshBasicMaterial({ color: 0x6b5a48 });
+  for (const [rx, rz, rw, rh] of [[0, -268, 560, 52], [0, 268, 560, 44], [268, 0, 20, 58], [-268, 0, 20, 48]]) {
+    const ridge = new THREE.Mesh(new THREE.BoxGeometry(rw, rh, 20), ridgeMat);
+    ridge.position.set(rx, rh / 2 - 4, rz);
+    scene.add(ridge);
   }
 
   // 20 Sun Shell collectibles: small glowing gold spheres, river/mesa/port.
@@ -189,31 +376,49 @@ export function createCity(seed = 7) {
     shells.push({ x, z, mesh: m, taken: false });
   }
 
-  // District labels floating over the city.
+  // District labels floating over the city — low enough to read from a
+  // chase camera without floating in the sky.
   for (const d of DISTRICTS) {
     const lab = labelSprite(d.name, '#e8e2d0', 40);
-    lab.position.set(d.x, 26, d.z);
+    lab.scale.set(16, 3.0, 1);
+    lab.position.set(d.x, 15, d.z);
     scene.add(lab);
   }
 
+  let wet = false;
   return {
     scene, sun, hemi, colliders, shells, lamps, liftSpan,
+    sky, water, rain, dust,
     dockPos: { x: -24, z: 44 },
     clubPos: { x: -110, z: 46 },
+    /** Wet roads: glossy dark asphalt + visible lamp streaks. Dry: matte. */
+    setWet(on) {
+      wet = on;
+      roadMat.roughness = on ? 0.25 : 0.95;
+      roadMat.metalness = on ? 0.55 : 0.05;
+      for (const s of streaks) s.material.opacity = on ? 0.55 : 0;
+    },
     setHour(hour) {
       const s2 = skyFor(hour);
+      const pal = sky.setHour(hour);
       scene.background.setHex(s2.sky);
-      scene.fog.color.setHex(s2.fog);
+      scene.fog.color.setHex(pal.fog);
+      scene.fog.density = s2.fogD;
       sun.color.setHex(s2.sun);
       sun.intensity = s2.sunI;
       sun.position.set(-60, s2.sunY, -80);
       hemi.intensity = s2.amb;
       fill.intensity = s2.fill;
-      winMat.emissiveIntensity = hour >= 19 || hour < 6 ? 0.9 : 0;
+      // Windows glow after dark / before dawn; the atlas does the rest.
+      winMat.emissiveIntensity = (hour >= 19 || hour < 6.5) ? 1.1 : 0;
+      // Water takes the sky + sun so the river mirrors the hour.
+      water.setSky(pal.fog, sky.uniforms.uSunDir.value, s2.sun);
     },
     update(dt, t) {
       liftSpan.position.y = -0.1 + Math.max(0, Math.sin(t * 0.15)) * 0.0; // lift span rests down; it rises during the Floodgate Job
       for (const sh of shells) if (!sh.taken) { sh.mesh.rotation.y += dt * 2; sh.mesh.position.y = 1.2 + Math.sin(t * 2 + sh.x) * 0.25; }
+      rain.update(dt);
+      dust.update(dt, t);
     },
   };
 }

@@ -5,6 +5,22 @@
 // tail fin, a wide spinning rotor disc, skids, and a spotlight cone.
 import * as THREE from '../vendor/three.module.min.js';
 import { POLICE_UNITS } from './config.js';
+import { makeGlowTexture } from './atmosphere.js';
+
+const glowTex = makeGlowTexture();
+
+/** Alternating red/blue glow sprite pair over a police light bar. */
+function sirenGlows(parent, y = 2.0) {
+  const red = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff2233, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
+  red.scale.set(2.6, 2.6, 1);
+  red.position.set(-0.45, y, -0.2);
+  parent.add(red);
+  const blue = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x2255ff, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending }));
+  blue.scale.set(2.6, 2.6, 1);
+  blue.position.set(0.45, y, -0.2);
+  parent.add(blue);
+  return { red, blue };
+}
 
 function policeCarMesh() {
   const g = new THREE.Group();
@@ -16,6 +32,8 @@ function policeCarMesh() {
   stripe.position.y = 0.72; g.add(stripe);
   const bar = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.2, 0.45), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0x2255ff, emissiveIntensity: 2 }));
   bar.position.set(0, 1.72, -0.2); g.add(bar);
+  const glows = sirenGlows(g, 1.95);
+  g.userData.glows = glows;
   const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.3, 10);
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
   for (const [x, z] of [[-0.95, 1.4], [0.95, 1.4], [-0.95, -1.4], [0.95, -1.4]]) {
@@ -28,8 +46,9 @@ function policeCarMesh() {
 /** The helicopter. Big airframe, low hover, all the read-as-helicopter parts. */
 export function buildHelicopter() {
   const g = new THREE.Group();
-  const navy = new THREE.MeshStandardMaterial({ color: 0x2e4d6e, roughness: 0.5, metalness: 0.35 });
-  const bellyMat = new THREE.MeshStandardMaterial({ color: 0x1d3a5c, roughness: 0.6, metalness: 0.2 });
+  // Lighter airframe than v1 (the old navy read as a black slab against the sky).
+  const navy = new THREE.MeshStandardMaterial({ color: 0x52779e, roughness: 0.5, metalness: 0.35 });
+  const bellyMat = new THREE.MeshStandardMaterial({ color: 0x35597e, roughness: 0.6, metalness: 0.2 });
   // Main fuselage + nose + cockpit glass.
   const body = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.0, 6.2), navy);
   body.position.y = 0; g.add(body);
@@ -66,9 +85,14 @@ export function buildHelicopter() {
     const blade = new THREE.Mesh(new THREE.BoxGeometry(11.5, 0.14, 0.9), new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
     blade.rotation.y = (i * Math.PI) / 2; rotor.add(blade);
   }
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(5.8, 28), new THREE.MeshBasicMaterial({ color: 0x111111, transparent: true, opacity: 0.22, side: THREE.DoubleSide }));
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(5.8, 28), new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.38, side: THREE.DoubleSide }));
   disc.rotation.x = -Math.PI / 2; rotor.add(disc);
   g.add(rotor);
+  // Red beacon glow — a soft halo so the belly beacon reads at a distance.
+  const beaconGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff2233, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending }));
+  beaconGlow.scale.set(3.2, 3.2, 1);
+  beaconGlow.position.set(0, -1.45, 0.5);
+  g.add(beaconGlow);
   // Skids.
   for (const x of [-1.2, 1.2]) {
     const skid = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.18, 5.0), new THREE.MeshStandardMaterial({ color: 0x222222 }));
@@ -77,11 +101,11 @@ export function buildHelicopter() {
   // Spotlight cone + ground pool live in a SEPARATE unscaled group (the
   // airframe group is scaled 1.3×, which would sink them below the ground).
   const fx = new THREE.Group();
-  const cone = new THREE.Mesh(new THREE.ConeGeometry(4.5, 10.7, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.10, side: THREE.DoubleSide, depthWrite: false }));
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(4.5, 10.7, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.17, side: THREE.DoubleSide, depthWrite: false }));
   cone.position.y = 5.4; fx.add(cone); // apex at the belly (~10.7), base on the ground
-  const pool = new THREE.Mesh(new THREE.CircleGeometry(4.5, 20), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.18, depthWrite: false }));
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(4.5, 20), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.28, depthWrite: false }));
   pool.rotation.x = -Math.PI / 2; pool.position.y = 0.15; fx.add(pool);
-  return { group: g, fx, rotor, tailRotor, beacon, cone, pool };
+  return { group: g, fx, rotor, tailRotor, beacon, beaconGlow, cone, pool };
 }
 
 export function createWanted(scene) {
@@ -135,6 +159,13 @@ export function createWanted(scene) {
         u.dist = Math.max(6, Math.round(Math.hypot(u.x - px, u.z - pz)));
         u.mesh.position.set(u.x, 0, u.z);
         u.mesh.rotation.y = o.heading;
+        // Alternating siren flash: red and blue take turns, twice a second.
+        const gl = u.mesh.userData.glows;
+        if (gl) {
+          const phase = Math.sin(t * 12 + i * Math.PI) > 0;
+          gl.red.material.opacity = phase ? 0.95 : 0.12;
+          gl.blue.material.opacity = phase ? 0.12 : 0.95;
+        }
       });
       if (player.mode === 'boat') {
         // On the river the VCPD cannot follow by car: two units wait on the
@@ -151,15 +182,22 @@ export function createWanted(scene) {
           u.mesh.rotation.y = s.ry;
         });
       }
-      // Roadblock: three cars across the road 42 m ahead, only at wanted 4+
-      // and only on land — never floating on the river.
+      // Roadblock: three cars across the road 34 m ahead, only at wanted 4+
+      // and only on land — never floating on the river. Chevron formation
+      // (outer cars angled in) so it reads as a blockade, not traffic.
       const showBlock = wanted >= 4 && player.mode !== 'boat';
       roadblock.forEach((mesh, i) => {
         mesh.visible = showBlock;
         if (!showBlock) return;
-        const pos = at([-4.5, 0, 4.5][i], 42 + (i === 1 ? 2 : 0));
+        const pos = at([-4.5, 0, 4.5][i], 34 + (i === 1 ? 2 : 0));
         mesh.position.set(pos.x, 0, pos.z);
-        mesh.rotation.y = player.heading + Math.PI; // facing the player
+        mesh.rotation.y = player.heading + Math.PI + [-0.35, 0, 0.35][i]; // facing the player, angled in
+        const gl = mesh.userData.glows;
+        if (gl) {
+          const phase = Math.sin(t * 12 + i * Math.PI) > 0;
+          gl.red.material.opacity = phase ? 0.95 : 0.12;
+          gl.blue.material.opacity = phase ? 0.12 : 0.95;
+        }
       });
       // Helicopter: LOW and CLOSE, turned ~40° so the chase camera sees its
       // SIDE profile — white stripe, tail boom, tall fin, belly plate, red
@@ -170,6 +208,7 @@ export function createWanted(scene) {
       heli.rotor.rotation.y += dt * 22;
       heli.tailRotor.rotation.x += dt * 30;
       heli.beacon.material.emissiveIntensity = (Math.sin(t * 9) > 0 ? 3.2 : 0.4);
+      if (heli.beaconGlow) heli.beaconGlow.material.opacity = (Math.sin(t * 9) > 0 ? 0.9 : 0.25);
       heli.fx.position.set(hpos.x, 0, hpos.z);
       heli.fx.visible = wanted >= 3;
     },
@@ -177,6 +216,13 @@ export function createWanted(scene) {
     rows() {
       return units.map((u) => ({ name: u.name, dist: u.dist, state: u.state }))
         .concat([{ name: 'AIR-1', dist: 48, state: 'SPOTLIGHT' }]);
+    },
+    /** Hide the police cars (but keep the helicopter) — for the river chase,
+     *  where cars on the water would read as a bug; pursuit boats take over. */
+    hideUnits(v) {
+      for (const u of units) u.mesh.visible = !v;
+      for (const m of roadblock) m.visible = false;
+      // update() only moves units, never re-shows them, so this sticks.
     },
   };
 }

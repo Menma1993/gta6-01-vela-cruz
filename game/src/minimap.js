@@ -23,6 +23,14 @@ export function createMinimap(canvas) {
       ctx.fillStyle = '#1d4a2e';
       ctx.fillRect(toX(-125), toY(75), 117, 81); // Port Vela
       ctx.fillRect(toX(-165), toY(10), 99, 81); // Neon Mile
+      // District names — so the minimap reads as a map, not green blobs.
+      ctx.fillStyle = 'rgba(232,226,208,0.9)';
+      ctx.font = 'bold 9px system-ui, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('OLD CROSSING', toX(-96), toY(-64));
+      ctx.fillText('CANAL ROW', toX(80), toY(-60));
+      ctx.fillText('MESA VERDE', toX(127), toY(48));
+      ctx.fillText('PORT VELA', toX(-66), toY(115));
+      ctx.fillText('NEON MILE', toX(-115), toY(50));
       // River (east-west band) + bridge deck.
       ctx.fillStyle = '#2e7d9e';
       ctx.fillRect(0, toY(-16), W, toY(16) - toY(-16));

@@ -3,7 +3,7 @@
 // and (on foot) pass — the cover and night shots both need them in frame.
 import * as THREE from '../vendor/three.module.min.js';
 
-function makeCarMesh(color, police = false) {
+export function makeCarMesh(color, police = false) {
   const g = new THREE.Group();
   const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.3 });
   const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.75, 4.4), bodyMat);
@@ -40,9 +40,10 @@ export function createTraffic(scene, seed = 11) {
     { axis: 'x', lane: 140, from: -200, to: 200, dir: 1 },
     { axis: 'z', lane: -90, from: -200, to: 200, dir: 1 },
     { axis: 'z', lane: 90, from: 200, to: -200, dir: -1 },
+    { axis: 'x', lane: -140, from: 200, to: -200, dir: -1 },
   ];
   const cars = [];
-  for (let i = 0; i < 12; i += 1) {
+  for (let i = 0; i < 18; i += 1) {
     const r = routes[i % routes.length];
     const mesh = makeCarMesh(TRAFFIC_COLORS[i % TRAFFIC_COLORS.length]);
     scene.add(mesh);
@@ -52,7 +53,7 @@ export function createTraffic(scene, seed = 11) {
   // Pedestrians: simple two-box figures strolling the sidewalks.
   const peds = [];
   const shirtColors = [0xd94f4f, 0x4f7dd9, 0x7dd94f, 0xd9c24f, 0xb04fd9, 0xe8e8e8];
-  for (let i = 0; i < 16; i += 1) {
+  for (let i = 0; i < 28; i += 1) {
     const g = new THREE.Group();
     const shirt = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.0, 0.4), new THREE.MeshStandardMaterial({ color: shirtColors[i % shirtColors.length] }));
     shirt.position.y = 1.05; g.add(shirt);

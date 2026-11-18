@@ -1,9 +1,18 @@
-// The four staged screenshots behind ?shot=cover|night|map|boat. Each one
+// The four staged screenshots behind ?shot=wide|cover|night|boat. Each one
 // sets the real game state (player, wanted, clock, dialogue, cash) and the real
 // world (traffic, police, helicopter, crew) to a fixed scenario, then renders
 // it — so every frame is what the game really looks like, and the same seed
 // always gives the same frame. Nothing is composited or borrowed.
+//
+// v2: four different times/weather, free cameras, denser staging.
+//   wide  — early-afternoon establishing, dust haze, whole city in one look
+//   cover — 5-star bridge chase, low chase cam, desaturated amber
+//   night — rain on foot at Neon Mile, over-shoulder, PRESS F – STEAL
+//   boat  — dawn river chase under the bridge, blue-hour mist, pursuit boats
 import { CHARACTERS } from './config.js';
+import { makeCarMesh } from './traffic.js';
+
+let stealCar = null; // the parked Solano GT outside Club Voltage (night shot only)
 
 function clockStr(hour) {
   const h = Math.floor(hour) % 24;
@@ -58,13 +67,48 @@ export function stageShot(name, G) {
   const save = G.save;
   let lookH = 1.6; // camera aim height; chase shots aim up so the heli reads
   let back = 0;
+  let cam = null; // [x, y, z, lx, ly, lz] free camera, applied after syncHud
   G.hud.showHud(true);
   G.menus.hideAll();
-  if (name === 'night') {
-    Object.assign(save, { cash: 7420, storyDone: 5, rep: 3, repProgress: 42, health: 74, armour: 45, day: 3, weekday: 'SAT', hour: 23.67, complete: 68 });
+  // Clean slate: every shot opts its weather in explicitly.
+  G.city.rain.setOn(false);
+  G.city.dust.setOn(true);
+  G.city.setWet(false);
+  G.pursuitBoats.hide();
+  G.wanted.hideUnits(false);
+  if (stealCar) stealCar.visible = false;
+
+  if (name === 'wide') {
+    // 1 — WIDE ESTABLISHING: hard early-afternoon light, dust haze, the
+    // whole city in one look — canyon, bridge, port cranes, downtown, river.
+    Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 14.5, complete: 68 });
+    G.city.setHour(14.5);
+    G.renderer.setExposure(1.12);
+    G.player.setMode('car', 0, -30, Math.PI / 2);
+    G.player.drive(0, 0, 0, false, G.city.colliders);
+    G.wanted.setWanted(0);
+    G.wanted.hideUnits(true); // no police cars parked in an establishing shot
+    baseUi(G, save);
+    G.ui.location = 'VELA CRUZ · RIVERSIDE · Old Crossing';
+    G.ui.dialogue = { ...CHARACTERS.mara, line: 'The whole city in one look — river, bridge, port, downtown.' };
+    stageTrafficNear(G, [[0, 60], [1, -20], [2, 120], [3, -80], [4, 30], [5, -140], [6, 80], [7, -40]], [[0, -11, -30], [1, 11, -48], [2, -11, -62], [3, 11, -20], [4, -11, 80], [5, 11, 100], [6, -11, 120], [7, 11, -100]]);
+    // From the south-east, looking north-west across the city: foreground
+    // port, mid river + bridge, downtown + ridges. Kept low (y=45) so the
+    // mesa top reads as a band at the horizon, not a flat slab.
+    cam = [60, 45, 190, -80, 5, -40];
+  } else if (name === 'night') {
+    // 3 — NIGHT RAIN ON FOOT: over-shoulder close at Neon Mile, wet road
+    // lamp streaks, lit windows, muzzle flash, PRESS F – STEAL.
+    // Staged NORTH of the club: the neon signs + CLUB VOLTAGE label face
+    // north, and the player stands on open ground, not inside the club box.
+    Object.assign(save, { cash: 7420, storyDone: 2, rep: 3, repProgress: 42, health: 74, armour: 45, day: 3, weekday: 'SAT', hour: 23.67, complete: 68 });
     G.city.setHour(23.67);
-    G.player.setMode('foot', -80, 44, -1.22);
-    G.player.walk(0, 0, 0, -1.22, G.city.colliders);
+    G.renderer.setExposure(1.4); // lift the dark so the frame reads at tile size
+    G.city.rain.setOn(true);
+    G.city.dust.setOn(false);
+    G.city.setWet(true);
+    G.player.setMode('foot', -104, 30, -0.24);
+    G.player.walk(0, 0, 0, -0.24, G.city.colliders);
     G.wanted.setWanted(3);
     G.wanted.setHeli(24, 14, 6); // night: heli further out, cone narrower in frame
     G.weapons.select(2);
@@ -73,40 +117,46 @@ export function stageShot(name, G) {
     G.ui.location = 'NEON MILE · Club Voltage · Neon Mile';
     G.ui.dialogue = { ...CHARACTERS.silas, line: 'You picked the wrong club, kid. My crew owns this street!' };
     G.ui.steal = 'Solano GT · parked · unlocked';
-    stageTrafficNear(G, [[5, 20]], [[0, -70, 40], [1, -118, 62], [2, -100, 70]]);
-  } else if (name === 'map') {
-    Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.4, complete: 68 });
-    G.city.setHour(17.4);
-    G.player.setMode('car', 0, -40, Math.PI);
-    G.player.drive(0, 0, 0, false, G.city.colliders);
-    G.wanted.setWanted(5);
-    baseUi(G, save);
-    G.ui.location = 'VELA CRUZ BRIDGE · Old Crossing';
-    G.ui.dialogue = { ...CHARACTERS.mara, line: 'Lose that helicopter before you bring the money to my garage!' };
-    G.menus.showMap(save);
-    G.hud.showHud(false);
-    syncHud(G);
-    return;
+    if (!stealCar) {
+      stealCar = makeCarMesh(0xd94f4f);
+      G.city.scene.add(stealCar);
+    }
+    stealCar.position.set(-99, 0, 26);
+    stealCar.rotation.y = 2.5; // three-quarter profile to the over-shoulder camera
+    stealCar.visible = true;
+    stageTrafficNear(G, [[5, 20]], [[0, -118, 30], [1, -100, 24], [2, -90, 34]]);
+    // Aim a touch left so the CLUB VOLTAGE sign clears the VCPD panel.
+    cam = [-96, 3.4, 22, -116, 3, 50];
   } else if (name === 'boat') {
-    Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 18.03, complete: 68 });
-    G.city.setHour(18.03);
+    // 4 — DAWN RIVER CHASE: blue-hour mist, wake + spray, bridge arches
+    // overhead, pursuit boats + helicopter. Police cars stay off the water.
+    Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 6.2, complete: 68 });
+    G.city.setHour(6.2);
+    G.renderer.setExposure(1.15);
+    G.city.dust.setOn(false);
     G.player.setMode('boat', -30, 0, Math.PI / 2);
     G.player.speed = 30; // 108 km/h
     G.player.condition = 91;
     G.player.drive(0, 0, 0, false, G.city.colliders);
-    G.wanted.setWanted(4);
+    G.wanted.setWanted(5);
     G.wanted.setHeli(16, 11, -8);
+    G.wanted.hideUnits(true);
+    G.pursuitBoats.place(0, -36, 9, Math.PI / 2);
+    G.pursuitBoats.place(1, -38, -8, Math.PI / 2);
     baseUi(G, save);
     G.ui.location = 'VELA RIVER · under the bridge · Old Crossing';
     G.ui.dialogue = { ...CHARACTERS.nina, line: 'Stay on the river — the VCPD boats cannot turn as fast as us!' };
     G.ui.stolen = true;
     stageTrafficNear(G, [[0, 10], [1, -5]], []);
-    lookH = 4.2;
+    // On the river centreline, above the water: the canyon walls stay at the
+    // frame edges instead of filling it, and the bridge reads ahead.
+    cam = [-56, 8, 2, 25, 1, -2];
   } else {
-    // cover — 5-star bridge chase at golden hour.
-    Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.4, complete: 68 });
-    G.city.setHour(17.4);
-    G.player.setMode('car', 0, -40, Math.PI);
+    // cover — 5-star bridge chase at golden hour, low chase camera.
+    Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.8, complete: 68 });
+    G.city.setHour(17.8);
+    G.renderer.setExposure(1.05);
+    G.player.setMode('car', 0, 18, Math.PI);
     G.player.speed = 42.8; // 154 km/h
     G.player.drive(0, 0, 0, false, G.city.colliders);
     G.wanted.setWanted(5);
@@ -118,8 +168,8 @@ export function stageShot(name, G) {
     G.ui.bridgeLift = '0:12';
     stageTrafficNear(G, [[0, -58], [1, -75], [3, -20]], [[0, -11, -30], [1, 11, -48], [2, -11, -62], [3, 11, -20]]);
     G.hud.toast('DRIFT ×3  ·  +$150 NEAR MISS', 60000);
-    lookH = 4.2;
-    back = 13;
+    cam = [1.5, 3.0, 30, 0, 2.2, -30];
   }
   syncHud(G, lookH, back);
+  if (cam) G.renderer.setCam(...cam);
 }

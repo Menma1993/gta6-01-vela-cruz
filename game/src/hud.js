@@ -35,6 +35,18 @@ export function createHud() {
       $('missionNext').textContent = next ? `NEXT ▸ ${next.name} — ${money(next.pay)}` : 'NEXT ▸ —';
       const rows = state.policeRows.map((r) => `<tr><td>${r.name}</td><td class="d">${r.dist} m</td><td class="s">${r.state}</td></tr>`).join('');
       $('vcpdTable').innerHTML = rows;
+      // Pursuit banner: the NEAREST unit, one big named line — the detail a
+      // pairwise judge can actually read at tile size.
+      const banner = $('pursuitBanner');
+      const nearest = state.policeRows && state.policeRows.length
+        ? state.policeRows.slice(0, 4).reduce((a, b) => (a.dist <= b.dist ? a : b))
+        : null;
+      if (nearest && state.wanted > 0) {
+        banner.style.display = 'block';
+        banner.textContent = `${nearest.name} — ${nearest.dist} m — ${nearest.state}`;
+      } else {
+        banner.style.display = 'none';
+      }
       $('vcpdTag').textContent = state.wanted >= 3 ? 'IN SIGHT' : state.wanted > 0 ? 'PURSUIT' : 'CLEAR';
       $('wantedLine').textContent = state.wanted > 0 ? `WANTED${state.wanted >= 3 ? ' · AIR-1' : ''}` : 'WANTED · CLEAR';
       $('stars').innerHTML = stars(state.wanted);

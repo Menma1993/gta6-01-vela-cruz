@@ -44,7 +44,54 @@ function buildBoatMesh() {
   wake.rotation.x = -Math.PI / 2;
   wake.position.set(0, 0.08, -6.2);
   g.add(wake);
+  const wake2 = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 12), new THREE.MeshBasicMaterial({ color: 0xd8f0f5, transparent: true, opacity: 0.16, depthWrite: false }));
+  wake2.rotation.x = -Math.PI / 2;
+  wake2.position.set(0, 0.06, -8.5);
+  g.add(wake2);
   return g;
+}
+
+/** VCPD pursuit boat: white hull, blue stripe, flashing light bar + wake. */
+function buildPoliceBoatMesh() {
+  const g = new THREE.Group();
+  const hull = new THREE.Mesh(new THREE.BoxGeometry(BOAT.width, 0.9, BOAT.length), new THREE.MeshStandardMaterial({ color: 0xf2f2f2, roughness: 0.4, metalness: 0.3 }));
+  hull.position.y = 0.6; g.add(hull);
+  const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.22, BOAT.length), new THREE.MeshStandardMaterial({ color: 0x1a4fd6 }));
+  stripe.position.y = 0.8; g.add(stripe);
+  const cab = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 2.2), new THREE.MeshStandardMaterial({ color: 0x18202e, roughness: 0.3, metalness: 0.5 }));
+  cab.position.set(0, 1.4, 0.4); g.add(cab);
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff2233, emissiveIntensity: 2 }));
+  bar.position.set(0, 1.95, 0.4); g.add(bar);
+  const motor = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.9, 0.5), new THREE.MeshStandardMaterial({ color: 0x141414 }));
+  motor.position.set(0, 0.8, -3.2); g.add(motor);
+  const wake = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 8), new THREE.MeshBasicMaterial({ color: 0xd8f0f5, transparent: true, opacity: 0.3, depthWrite: false }));
+  wake.rotation.x = -Math.PI / 2;
+  wake.position.set(0, 0.08, -6);
+  g.add(wake);
+  return g;
+}
+
+/** Two VCPD pursuit boats for the river chase — placed by shots.js. */
+export function createPursuitBoats(scene) {
+  const boats = [];
+  for (let i = 0; i < 2; i += 1) {
+    const mesh = buildPoliceBoatMesh();
+    mesh.visible = false;
+    scene.add(mesh);
+    boats.push({ mesh, x: 0, z: 0, heading: 0 });
+  }
+  return {
+    boats,
+    place(i, x, z, heading) {
+      const b = boats[i];
+      if (!b) return;
+      b.x = x; b.z = z; b.heading = heading;
+      b.mesh.position.set(x, 0.1, z);
+      b.mesh.rotation.y = heading;
+      b.mesh.visible = true;
+    },
+    hide() { for (const b of boats) b.mesh.visible = false; },
+  };
 }
 
 function buildFigureMesh(shirtColor = 0xd94f4f) {

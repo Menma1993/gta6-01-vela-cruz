@@ -9,7 +9,7 @@ import { readSave, writeSave, ensureSave, newGameSave } from './save.js';
 import { createRadio } from './radio.js';
 import { createCity } from './city.js';
 import { createTraffic } from './traffic.js';
-import { createPlayer, createParkedCars } from './vehicles.js';
+import { createPlayer, createParkedCars, createPursuitBoats } from './vehicles.js';
 import { createWanted } from './wanted.js';
 import { createStory } from './story.js';
 import { createWeapons } from './weapons.js';
@@ -31,6 +31,7 @@ const city = createCity(seed);
 const traffic = createTraffic(city.scene, seed + 1);
 const player = createPlayer(city.scene);
 const parked = createParkedCars(city.scene);
+const pursuitBoats = createPursuitBoats(city.scene);
 const wanted = createWanted(city.scene);
 const weapons = createWeapons(city.scene);
 const radio = createRadio();
@@ -231,7 +232,7 @@ function step(dt) {
 const G_input = createInput(canvas);
 
 function runShot(name) {
-  const G = { player, wanted, city, traffic, weapons, story, ui, save, hud, menus, radio, renderer };
+  const G = { player, wanted, city, traffic, weapons, story, ui, save, hud, menus, radio, renderer, pursuitBoats };
   stageShot(name, G);
   let painted = 0;
   function paint() {
