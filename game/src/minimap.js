@@ -1,0 +1,70 @@
+// Live minimap: a 190x190 round canvas, north-up. River band across the
+// middle, the bridge avenue crossing it, district blocks, and dots for the
+// player (white arrow), VCPD (red), the active job (yellow diamond) and
+// Sun Shells (cyan). Redrawn every frame from live state — cheap at this size.
+import { WORLD } from './config.js';
+
+export function createMinimap(canvas) {
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const toX = (x) => ((x + WORLD.half) / (WORLD.half * 2)) * W;
+  const toY = (z) => ((z + WORLD.half) / (WORLD.half * 2)) * H;
+
+  return {
+    draw(state) {
+      ctx.clearRect(0, 0, W, H);
+      // Land + districts.
+      ctx.fillStyle = '#123524'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#1d4a2e';
+      ctx.fillRect(toX(-150), toY(-105), 108, 81); // Old Crossing
+      ctx.fillRect(toX(30), toY(-98), 99, 77); // Canal Row
+      ctx.fillStyle = '#6b4a2f';
+      ctx.fillRect(toX(60), toY(-10), 135, 117); // Mesa Verde
+      ctx.fillStyle = '#1d4a2e';
+      ctx.fillRect(toX(-125), toY(75), 117, 81); // Port Vela
+      ctx.fillRect(toX(-165), toY(10), 99, 81); // Neon Mile
+      // River (east-west band) + bridge deck.
+      ctx.fillStyle = '#2e7d9e';
+      ctx.fillRect(0, toY(-16), W, toY(16) - toY(-16));
+      ctx.fillStyle = '#3a3b40';
+      ctx.fillRect(toX(-8), 0, toX(8) - toX(-8), H);
+      // Roads.
+      ctx.strokeStyle = '#3a3b40'; ctx.lineWidth = 5;
+      ctx.beginPath(); ctx.moveTo(0, toY(-60)); ctx.lineTo(W, toY(-60)); ctx.moveTo(0, toY(60)); ctx.lineTo(W, toY(60)); ctx.stroke();
+      // Sun Shells.
+      ctx.fillStyle = '#ffd34d';
+      for (const s of state.shells || []) {
+        if (s.taken) continue;
+        ctx.beginPath(); ctx.arc(toX(s.x), toY(s.z), 2, 0, Math.PI * 2); ctx.fill();
+      }
+      // Active job marker.
+      if (state.jobMarker) {
+        ctx.fillStyle = '#ffd34d';
+        const jx = toX(state.jobMarker.x), jy = toY(state.jobMarker.z);
+        ctx.beginPath(); ctx.moveTo(jx, jy - 6); ctx.lineTo(jx + 6, jy); ctx.lineTo(jx, jy + 6); ctx.lineTo(jx - 6, jy); ctx.closePath(); ctx.fill();
+      }
+      // VCPD units.
+      ctx.fillStyle = '#ff4040';
+      for (const u of state.police || []) {
+        ctx.beginPath(); ctx.arc(toX(u.x), toY(u.z), 3.5, 0, Math.PI * 2); ctx.fill();
+      }
+      // Helicopter.
+      if (state.heli) {
+        ctx.fillStyle = '#ff9040';
+        ctx.beginPath(); ctx.arc(toX(state.heli.x), toY(state.heli.z), 3, 0, Math.PI * 2); ctx.fill();
+      }
+      // Player arrow, rotated by heading: canvas up is -Z, heading 0 drives +Z.
+      const px = toX(state.player.x), py = toY(state.player.z);
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.rotate(Math.PI - state.player.heading);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(5, 6); ctx.lineTo(0, 3); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      // North marker.
+      ctx.fillStyle = '#9ecbff';
+      ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText('N', W / 2, 14);
+    },
+  };
+}

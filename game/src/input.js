@@ -1,53 +1,58 @@
-// Keyboard and pointer input. Held keys give a steering direction; one-shot presses (start or
-// restart, pause) are queued as bit flags and taken once by the loop, so a press between two
-// frames is never lost and never counted twice.
+// Keyboard + mouse input. Held keys give steering/throttle; one-shot presses
+// (enter vehicle, reload, map, radio, pause, confirm) are queued as bit flags
+// and taken once by the loop, so a press between two frames is never lost.
+export const ACT_CONFIRM = 1;
+export const ACT_ENTER = 2;
+export const ACT_RELOAD = 4;
+export const ACT_MAP = 8;
+export const ACT_RADIO = 16;
+export const ACT_PAUSE = 32;
+export const ACT_SLOT = 64; // + slot number in slotIndex
 
-export const ACTION_CONFIRM = 1;
-export const ACTION_PAUSE = 2;
+const FWD = new Set(['KeyW', 'ArrowUp']);
+const BACK = new Set(['KeyS', 'ArrowDown']);
+const LEFT = new Set(['KeyA', 'ArrowLeft']);
+const RIGHT = new Set(['KeyD', 'ArrowRight']);
 
-const LEFT = new Set(['ArrowLeft', 'KeyA']);
-const RIGHT = new Set(['ArrowRight', 'KeyD']);
-const CONFIRM = new Set(['Space', 'Enter']);
-const PAUSE = new Set(['KeyP', 'Escape']);
-
-export function createInput(target) {
-  let left = false;
-  let right = false;
+export function createInput(canvas) {
+  const held = new Set();
   let actions = 0;
+  let slotIndex = -1;
+  let mouseX = 0.5;
+  let mouseDown = false;
+  let clicked = false;
 
-  window.addEventListener('keydown', (event) => {
-    if (LEFT.has(event.code)) left = true;
-    else if (RIGHT.has(event.code)) right = true;
-    else if (CONFIRM.has(event.code)) {
-      if (!event.repeat) actions |= ACTION_CONFIRM;
-    } else if (PAUSE.has(event.code)) {
-      if (!event.repeat) actions |= ACTION_PAUSE;
-    } else return;
-    event.preventDefault();
+  window.addEventListener('keydown', (e) => {
+    if (e.repeat) { if (FWD.has(e.code) || BACK.has(e.code) || LEFT.has(e.code) || RIGHT.has(e.code)) held.add(e.code); return; }
+    held.add(e.code);
+    if (e.code === 'Space' || e.code === 'Enter') actions |= ACT_CONFIRM;
+    else if (e.code === 'KeyF') actions |= ACT_ENTER;
+    else if (e.code === 'KeyR') actions |= ACT_RELOAD;
+    else if (e.code === 'KeyM') actions |= ACT_MAP;
+    else if (e.code === 'KeyQ') actions |= ACT_RADIO;
+    else if (e.code === 'KeyP' || e.code === 'Escape') actions |= ACT_PAUSE;
+    else if (e.code >= 'Digit1' && e.code <= 'Digit5') { actions |= ACT_SLOT; slotIndex = Number(e.code.slice(-1)) - 1; }
+    if (!['F5', 'F12'].includes(e.code)) e.preventDefault();
   });
-  window.addEventListener('keyup', (event) => {
-    if (LEFT.has(event.code)) left = false;
-    else if (RIGHT.has(event.code)) right = false;
-  });
-  // A key released while the tab is hidden never sends keyup: let go of everything on blur.
-  window.addEventListener('blur', () => {
-    left = false;
-    right = false;
-  });
-  target.addEventListener('pointerdown', () => {
-    actions |= ACTION_CONFIRM;
-  });
+  window.addEventListener('keyup', (e) => held.delete(e.code));
+  window.addEventListener('blur', () => held.clear());
+  canvas.addEventListener('pointermove', (e) => { mouseX = e.clientX / window.innerWidth; });
+  canvas.addEventListener('pointerdown', (e) => { mouseDown = true; clicked = true; if (e.button === 0) actions |= ACT_CONFIRM; });
+  window.addEventListener('pointerup', () => { mouseDown = false; });
 
+  const any = (set) => [...set].some((c) => held.has(c));
   return {
-    /** -1 for left, 1 for right, 0 for neither or both. */
-    direction() {
-      return (right ? 1 : 0) - (left ? 1 : 0);
-    },
-    /** The one-shot presses since the last call, as ACTION_* flags. */
+    throttle() { return (any(FWD) ? 1 : 0) - (any(BACK) ? 1 : 0); },
+    steer() { return (any(RIGHT) ? 1 : 0) - (any(LEFT) ? 1 : 0); },
+    handbrake() { return held.has('Space'); },
+    sprint() { return held.has('ShiftLeft') || held.has('ShiftRight'); },
+    mouseX() { return mouseX; },
+    mouseDown() { return mouseDown; },
+    takeClick() { const c = clicked; clicked = false; return c; },
     takeActions() {
-      const taken = actions;
-      actions = 0;
-      return taken;
+      const taken = actions; const slot = slotIndex;
+      actions = 0; slotIndex = -1;
+      return { flags: taken, slot };
     },
   };
 }
