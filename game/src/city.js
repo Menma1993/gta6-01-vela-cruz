@@ -659,7 +659,12 @@ export function createCity(seed = 7) {
       const color = PALETTE.building[Math.floor(rnd() * PALETTE.building.length)];
       pos.set(p.x, p.h / 2, p.z); sc.set(p.w, p.h, p.d);
       m4.compose(pos, q, sc); facades.setMatrixAt(i, m4);
-      facades.setColorAt(i, col.setHex(color));
+      // r4d-touch: per-building tint/brightness jitter from a coordinate hash
+      // (no rnd() consumed, so the layout/seed stream is untouched) — the
+      // facades stop reading as one flat cardboard tint per district.
+      const hv = Math.abs(Math.sin(p.x * 12.9898 + p.z * 78.233) * 43758.5453) % 1;
+      const tint = 0.88 + hv * 0.24;
+      facades.setColorAt(i, col.setHex(color).multiplyScalar(tint));
       pos.set(p.x, p.h * 0.55, p.z + p.d / 2 + 0.15); sc.set(p.w * 0.7, p.h * 0.55, 0.3);
       m4.compose(pos, q, sc); windows.setMatrixAt(i, m4);
       colliders.push({ x0: p.x - p.w / 2, z0: p.z - p.d / 2, x1: p.x + p.w / 2, z1: p.z + p.d / 2 });

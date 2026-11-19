@@ -154,6 +154,15 @@ function buildBoatMesh() {
   transom.position.set(0, 0.85, -3.35); g.add(transom);
   const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.18, BOAT.length), new THREE.MeshStandardMaterial({ color: 0xffd34d }));
   stripe.position.y = 0.85; g.add(stripe);
+  // r4d-touch: thin dark rub stripe under the yellow one + a small white
+  // stern light on a short pole, so the green hull has a second read line
+  // and the stern is not an empty dark slab at dawn.
+  const stripe2 = new THREE.Mesh(new THREE.BoxGeometry(2.44, 0.08, BOAT.length), new THREE.MeshStandardMaterial({ color: 0x14202e, roughness: 0.5 }));
+  stripe2.position.y = 0.62; g.add(stripe2);
+  const sternPole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.7, 6), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+  sternPole.position.set(0, 1.6, -3.1); g.add(sternPole);
+  const sternLight = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffe9a0, emissiveIntensity: 2.2 }));
+  sternLight.position.set(0, 2.0, -3.1); g.add(sternLight);
   // Wake: a V of foam spreading behind the stern (not one flat rectangle)
   // + scattered foam dots, so it reads as spray at speed.
   const wake = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 10), new THREE.MeshBasicMaterial({ color: 0xe8f6fa, transparent: true, opacity: 0.5, depthWrite: false }));
@@ -207,6 +216,12 @@ function buildPoliceBoatMesh() {
   }
   const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff2233, emissiveIntensity: 3 }));
   bar.position.set(0, 1.95, 0.4); g.add(bar);
+  // r4d-touch: whip antenna + small red beacon on the cab roof — the light
+  // bar stops being the only vertical detail on the wheelhouse.
+  const aerial = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 1.1, 6), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+  aerial.position.set(-0.7, 2.4, -0.4); g.add(aerial);
+  const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 2.5 }));
+  beacon.position.set(0.7, 1.9, -0.4); g.add(beacon);
   const motor = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.6), new THREE.MeshStandardMaterial({ color: 0x141414 }));
   motor.position.set(0, 0.9, -3.3); g.add(motor);
   const plate = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.7), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.8 }));

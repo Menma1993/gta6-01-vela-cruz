@@ -277,6 +277,25 @@ export function asphaltTexture() {
     });
   }
 
+  // r4d-touch: worn pale patches where traffic polishes the surface + a few
+  // darker damp blotches, so a long stretch of road never reads as one flat
+  // brown card at chase-cam distance. Kept low-alpha; the wet pass still owns
+  // the strong reflections.
+  for (let i = 0; i < 6; i += 1) {
+    const x = Math.random() * S, y = Math.random() * S, r = 26 + Math.random() * 42;
+    const damp = Math.random() < 0.45;
+    const rgb = damp ? '22,18,14' : '150,132,108';
+    const a = damp ? 0.07 + Math.random() * 0.04 : 0.05 + Math.random() * 0.04;
+    wrap(x, y, r, (px, py) => {
+      const grd = g.createRadialGradient(px, py, 0, px, py, r);
+      grd.addColorStop(0, `rgba(${rgb},${a})`);
+      grd.addColorStop(0.7, `rgba(${rgb},${a * 0.4})`);
+      grd.addColorStop(1, `rgba(${rgb},0)`);
+      g.fillStyle = grd;
+      g.beginPath(); g.arc(px, py, r, 0, Math.PI * 2); g.fill();
+    });
+  }
+
   // Tar-seal patches: irregular clusters of soft dark blobs.
   for (let i = 0; i < 12; i += 1) {
     const cx = Math.random() * S, cy = Math.random() * S;

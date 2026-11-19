@@ -90,7 +90,7 @@ export function stageShot(name, G) {
     // (golden wide / golden chase / neon night / blue dawn).
     Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.6, complete: 68 });
     G.city.setHour(17.6);
-    G.city.setSunOverride(-1, 0.14, -0.06, 0.0032, 1.7); // r4d: sun low in the west, over the river vanishing point; fill lifts the shadow-side facades
+    G.city.setSunOverride(-1, 0.14, -0.06, 0.0032, 1.8); // r4d: sun low in the west, over the river vanishing point; fill lifts the shadow-side facades — r4d-touch 1.7 -> 1.8, a touch more lift now the brighter clouds add sky light
     G.renderer.setExposure(1.24);
     G.player.setMode('car', 0, 8, Math.PI);
     G.player.drive(0, 0, 0, false, G.city.colliders);
@@ -163,7 +163,7 @@ export function stageShot(name, G) {
     // overhead, pursuit boats + helicopter. Police cars stay off the water.
     Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 6.2, complete: 68 });
     G.city.setHour(6.2);
-    G.city.setSunOverride(1, 0.10, -0.05, 0.004, 0.9); // r4d: dawn sun low in the east, over the river ahead — disc + glint lane in frame
+    G.city.setSunOverride(1, 0.10, -0.05, 0.004, 1.0); // r4d: dawn sun low in the east, over the river ahead — disc + glint lane in frame; r4d-touch fill 0.9 -> 1.0 so the pursuit boats' white hulls hold against the brighter dawn sky
     G.renderer.setExposure(1.15);
     G.city.dust.setOn(false);
     G.player.setMode('boat', -30, 0, Math.PI / 2);

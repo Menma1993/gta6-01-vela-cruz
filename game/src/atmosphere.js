@@ -184,12 +184,21 @@ export function createSky(scene) {
 
         // Procedural clouds: soft billows in the upper sky, sun-tinted, so the
         // zenith never reads as an empty gradient. Day/golden only.
+        // r4d-touch: coverage + contrast raised — r4d's clouds were nearly
+        // invisible at golden hour (threshold 0.52, mix 0.38). Lower floor,
+        // tighter ceiling and a stronger mix, plus a fine detail octave so
+        // the billows keep an edge instead of one soft wash.
         vec2 cuv = d.xz / max(d.y + 0.22, 0.06);
         float cn = fbm3(cuv * 0.55 + vec2(3.7, 1.3));
-        float cmask = smoothstep(0.16, 0.30, h) * (1.0 - smoothstep(0.55, 0.72, h));
-        float cov = smoothstep(0.52, 0.72, cn) * cmask * (1.0 - uNight);
+        float cd = fbm3(cuv * 1.6 + vec2(9.1, 4.2));
+        float cmask = smoothstep(0.14, 0.28, h) * (1.0 - smoothstep(0.55, 0.78, h));
+        float cov = smoothstep(0.44, 0.62, cn) * cmask * (1.0 - uNight);
+        cov *= 0.72 + 0.55 * smoothstep(0.35, 0.65, cd);
         vec3 cloudCol = mix(uHorizon, uSunColor, 0.45);
-        col = mix(col, cloudCol, cov * 0.38);
+        // Underside shade: denser cores read slightly cooler/darker, so a
+        // billow has a top and a belly instead of one flat tint.
+        cloudCol = mix(cloudCol, uMid * 0.92 + uHorizon * 0.08, smoothstep(0.62, 0.85, cn) * 0.35);
+        col = mix(col, cloudCol, clamp(cov, 0.0, 1.0) * 0.55);
         // Horizon haze: same colour as the fog, thickest at the waterline, so
         // distant towers dissolve into the sky instead of cutting a silhouette.
         float haze = pow(1.0 - clamp(h / 0.30, 0.0, 1.0), 2.0);
