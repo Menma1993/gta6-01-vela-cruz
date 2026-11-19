@@ -247,7 +247,8 @@ export function asphaltTexture() {
       }
     }
   };
-  g.fillStyle = '#2e2e34';
+  // r4: warm brown-grey base (was neutral #2e2e34) — golden-hour asphalt, not cold grey.
+  g.fillStyle = '#38302a';
   g.fillRect(0, 0, S, S);
 
   // Broad mottle: keeps the wet pass reading patchy instead of one flat dark.

@@ -40,6 +40,9 @@ export function createMenus(callbacks) {
     g.fillStyle = '#c9a227'; g.fillRect(toX(-8), toY(-16), toX(8) - toX(-8), toY(16) - toY(-16));
     g.fillStyle = '#e8e2d0'; g.font = 'bold 10px system-ui, sans-serif'; g.textAlign = 'left';
     g.fillText('VELA CRUZ BRIDGE', 8, toY(-22));
+    // Palm Boulevard (the r4 cover street): gold line down the avenue, south of the river.
+    g.strokeStyle = '#c9a227'; g.lineWidth = 4;
+    g.beginPath(); g.moveTo(toX(0), toY(28)); g.lineTo(toX(0), toY(172)); g.stroke();
     // Roads.
     g.strokeStyle = '#555'; g.lineWidth = 3;
     g.beginPath(); g.moveTo(0, toY(-60)); g.lineTo(W, toY(-60)); g.moveTo(0, toY(60)); g.lineTo(W, toY(60)); g.stroke();

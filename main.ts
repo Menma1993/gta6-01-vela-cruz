@@ -17,10 +17,10 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildDossier } from './vendor/makefun-game.ts';
 
-// Vela Cruz — authored entry metadata and pre-flight checks (v3 visual revision).
+// Vela Cruz — authored entry metadata and pre-flight checks (v7 r4 round 1 polish).
 const VELA_CRUZ = {
   name: 'Vela Cruz',
-  version: '1.5.1',
+  version: '1.5.2',
   city: 'Vela Cruz — river-canyon open-world crime game',
   shots: ['1-wide.jpg', '2-cover.jpg', '3-night.jpg', '4-boat.jpg'],
 } as const;
@@ -61,5 +61,5 @@ writeFileSync(
 );
 
 console.log(
-  `Vela Cruz v${VELA_CRUZ.version} (v5 visual revision): handed in ${VELA_CRUZ.shots.length} screenshots + game/ to ${out}`,
+  `Vela Cruz v${VELA_CRUZ.version} (v7 r4 round 1 polish): handed in ${VELA_CRUZ.shots.length} screenshots + game/ to ${out}`,
 );

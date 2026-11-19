@@ -12,7 +12,9 @@ export function createRenderer(canvas, city) {
   // Global look: ACES filmic tone mapping + sRGB output is the one-pass grade
   // the whole game shares — warm highlights, cool shadows, no blown sky.
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.12;
+  // r4: golden-hour default exposure for live play (staged shots override per shot).
+  const GOLDEN_HOUR_EXPOSURE = 1.18;
+  renderer.toneMappingExposure = GOLDEN_HOUR_EXPOSURE;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   // v3: real shadows. One directional sun with a tight frustum that follows
   // the player (see followSun) — this is what makes buildings, cars and the

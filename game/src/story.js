@@ -26,6 +26,11 @@ export function createStory(save) {
       state.copsLost = saveRef.copsLost;
     },
     activeJob() { return state.jobs.find((j) => j.active) || state.jobs[state.jobs.length - 1]; },
+    /** One-line summary of the active job: name + payout. */
+    activeJobSummary() {
+      const job = this.activeJob();
+      return `${job.name} — $${job.pay.toLocaleString('en-US')}`;
+    },
     /** Finish the active job: pay out, advance story, bump REP. Returns the payout. */
     completeJob(saveRef) {
       const job = state.jobs.find((j) => j.active);

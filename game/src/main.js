@@ -19,6 +19,7 @@ import { createRenderer } from './render.js';
 import { stageShot } from './shots.js';
 
 const MAX_FRAME = 0.25;
+const BUILD_TAG = 'v7 r4a'; // polish round stamped on the title status line
 const params = new URLSearchParams(window.location.search);
 const shot = params.get('shot');
 const seedParam = Number.parseInt(params.get('seed') ?? '', 10);
@@ -257,7 +258,7 @@ function runGame() {
   menus.showTitle(save);
   menus.wire();
   hud.showHud(false);
-  announce('Vela Cruz. Press Space or click New Game to start.');
+  announce(`Vela Cruz ${BUILD_TAG}. Press Space or click New Game to start.`);
   let last = performance.now();
   let accumulator = 0;
   function frame(now) {

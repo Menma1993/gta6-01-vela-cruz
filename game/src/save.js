@@ -15,9 +15,12 @@ export function readSave() {
   }
 }
 
+/** Save-format version, stamped onto every written save for future migration. */
+export const SAVE_VERSION = 2;
+
 export function writeSave(save) {
   try {
-    window.localStorage.setItem(SAVE_KEY, JSON.stringify(save));
+    window.localStorage.setItem(SAVE_KEY, JSON.stringify({ ...save, version: SAVE_VERSION }));
     return true;
   } catch {
     return false;

@@ -54,7 +54,8 @@ export function createHud() {
       const job = state.job;
       $('missionTitle').textContent = `MISSION ${job.n} / 8 · ${job.name}`;
       $('missionObj').textContent = job.obj;
-      $('missionSub').textContent = `STORY ${state.save.storyDone} / 8 · REP ${state.save.rep} · ${state.save.repProgress}%`;
+      const roadblockAhead = state.wanted >= 4 && state.mode !== 'boat';
+      $('missionSub').textContent = `STORY ${state.save.storyDone} / 8 · REP ${state.save.rep} · ${state.save.repProgress}%${roadblockAhead ? ' · ROADBLOCK AHEAD' : ''}${state.stolen ? ' · VEHICLE STOLEN' : ''}`;
       const next = state.nextJob;
       $('missionNext').textContent = next ? `NEXT ▸ ${next.name} — ${money(next.pay)}` : 'NEXT ▸ —';
       const rows = state.policeRows.map((r) => `<tr><td>${r.name}</td><td class="d">${r.dist} m</td><td class="s"><span class="pill pill-${({ RAMMING: 'ramming', SPOTLIGHT: 'spotlight', PURSUIT: 'pursuit', ROADBLOCK: 'roadblock' })[r.state] || 'pursuit'}">${r.state}</span></td></tr>`).join('');
@@ -89,9 +90,8 @@ export function createHud() {
           ? `HULL ${state.condition}% · RIVER`
           : `CONDITION ${state.condition}% · G${state.gear} · ${state.nitro ? 'NITRO READY' : 'NITRO EMPTY'}`;
       $('radio').textContent = state.radioLabel;
-      $('badgeRoadblock').style.display = state.wanted >= 4 && state.mode !== 'boat' ? 'block' : 'none';
-      $('badgeStolen').style.display = state.stolen ? 'block' : 'none';
-      $('badgeStolen').textContent = `VEHICLE STOLEN: ${state.vehicleName}`;
+      $('badgeRoadblock').style.display = 'none';
+      $('badgeStolen').style.display = 'none';
       $('badgeBridge').style.display = state.bridgeLift ? 'block' : 'none';
       $('badgeBridge').textContent = `🌉 BRIDGE LIFT ${state.bridgeLift}`;
       $('stealPrompt').style.display = state.steal ? 'block' : 'none';

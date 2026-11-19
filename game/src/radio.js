@@ -61,7 +61,7 @@ export function createRadio() {
     current() { return RADIO[station]; },
     label() {
       const s = RADIO[station];
-      return `♪ ${s.freq} · ${s.name} — ${s.song} · ${s.artist}`;
+      return `♪ ${station + 1}/${RADIO.length} · ${s.freq} · ${s.name} — ${s.song} · ${s.artist}`;
     },
     stop() { on = false; if (timer) clearTimeout(timer); },
   };

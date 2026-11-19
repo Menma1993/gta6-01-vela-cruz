@@ -198,8 +198,8 @@ export function stageShot(name, G) {
     G.player.speed = 42.8; // 154 km/h
     G.player.drive(0, 0, 0, false, G.city.colliders);
     G.wanted.setWanted(5);
-    // 30 m ahead (z≈120), 13 m up, 15 m to the player's left: heli sits ~56% width / ~19% height, clear of the VCPD HUD panel and of the z=130 building.
-    G.wanted.setHeli(30, 13, -15);
+    // 26 m ahead (z≈124), 12 m up, 9 m to the player's left: beam pool lands on the road just ahead of the hero car, inside the cover frame
+    G.wanted.setHeli(26, 12, -9);
     baseUi(G, save);
     G.ui.location = 'PALM BOULEVARD · Vela Cruz';
     G.ui.dialogue = { ...CHARACTERS.mara, line: 'Lose that helicopter before you bring the money to my garage!' };
@@ -207,12 +207,20 @@ export function stageShot(name, G) {
     G.city.setWet(true);
     G.traffic.setNight(true);
     stageTrafficNear(G, [[0, 134], [1, 121], [8, 107], [9, 96], [16, -180], [17, 180]], [[0, -11, 140], [1, 11, 128], [2, -11, 113], [3, 11, 119], [4, -13, 136], [5, -17, 124], [6, -12, 148]]);
-    // v9 (R3-1a): 6 m behind the car (z=156), 2 m to its left, 1.8 m up.
-    // lookAt lies on the ray camera -> car rear-top (0, 1.25, 150), so the
-    // car centre lands ~50% width spanning ~34% of the frame, rear 3/4
-    // (rear + left side) visible; road vanishing point + sun disc sit
-    // upper-left (~34% width, sun ~27% height).
-    cam = [-2.0, 1.8, 156, 16.7, -3.3, 100];
+    // Cover: 5-star chase down Palm Boulevard. Low 3/4 rear-left so the rear face + left flank +
+    // wheels + ground shadow all read, and the roof stops dominating.
+    //   behind:  z=154 vs car rear z=150  -> 4 m behind (was 6)
+    //   left:    x=-4.5 vs centreline x=0 -> 4.5 m to the car's left
+    //   height:  1.05 m (down ~40% from 1.8)
+    // lookAt must sit ON the ray cam -> car rear-top (0, 1.25, 150), extended forward by the same
+    // factor the old shot used. Old: dir (16.7,-3.3,100)-(-2.0,1.8,156) = (18.7,-5.1,-56), |.|=59.26,
+    // over the unit-ish (2,-0.55,-6) with |.|=6.35  ->  59.26/6.35 = 9.3x.
+    // New: dir to rear-top = (0,1.25,150)-(-4.5,1.05,154) = (4.5, 0.2, -4), |.| = 6.02.
+    //   9.3 * (4.5, 0.2, -4) = (41.85, 1.86, -37.2)
+    //   lookAt = (-4.5+41.85, 1.05+1.86, 154-37.2) = (37.35, 2.91, 116.8)
+    // Car stays dead-centred (rear-top is exactly on the ray); aim swings right of the road axis,
+    // pushing the road vanishing point + sun disc to the upper-left (~34% width, ~27% height).
+    cam = [-4.5, 1.05, 154, 37.4, 2.9, 116.8];
   }
   syncHud(G, lookH, back);
   if (cam) G.renderer.setCam(...cam);

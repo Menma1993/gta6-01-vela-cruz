@@ -10,3 +10,8 @@ export function createRandom(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/** Uniform float in [min, max) from a seeded rng. */
+export function range(random, min, max) { return min + random() * (max - min); }
+/** Pick one element of arr uniformly from a seeded rng. */
+export function pick(random, arr) { return arr[Math.floor(random() * arr.length)]; }

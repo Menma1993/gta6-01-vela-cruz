@@ -17,12 +17,16 @@ function buildCarMesh(color) {
   const hood = new THREE.Mesh(new THREE.BoxGeometry(CAR.width * 0.94, 0.16, 1.5), paintMat);
   hood.rotation.x = 0.09; hood.position.set(0, 0.94, 1.5); g.add(hood);
   // Low greenhouse: shorter, lower, shifted back and tipped nose-down.
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.38, 1.15), new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.08, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 0.5 }));
-  cabin.rotation.x = 0.1; cabin.position.set(0, 1.06, -0.5); g.add(cabin);
-  // Flat rear decklid sitting under the wing struts.
-  const deckMat = new THREE.MeshStandardMaterial({ color: 0x8a1515, roughness: 0.55, metalness: 0.0, envMapIntensity: 0.15 });
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(CAR.width * 0.98, 0.08, 1.2), deckMat);
-  deck.position.set(0, 1.01, -1.72); g.add(deck);
+  const glassMat = new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.08, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 0.5 });
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.32, 1.15), glassMat);
+  cabin.rotation.x = 0.1; cabin.position.set(0, 1.00, -0.55); g.add(cabin);
+  // Sloped fastback rear glass, dropping ~0.25 m from cabin rear-top down to the decklid.
+  const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 0.9), glassMat);
+  rearGlass.rotation.x = -0.28;
+  rearGlass.position.set(0, 0.97, -1.52); g.add(rearGlass);
+  // Sloped rear decklid, in body paint, rear edge lower.
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(CAR.width * 0.98, 0.07, 1.3), paintMat);
+  deck.rotation.x = -0.16; deck.position.set(0, 0.97, -1.65); g.add(deck);
   // Front splitter tucked under the nose.
   const splitter = new THREE.Mesh(new THREE.BoxGeometry(CAR.width * 0.98, 0.07, 0.4), new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.4, metalness: 0.6 }));
   splitter.position.set(0, 0.34, 2.12); g.add(splitter);
@@ -39,13 +43,8 @@ function buildCarMesh(color) {
     mirror.position.set(x * 1.0, 1.02, 0.3); g.add(mirror);
   }
   // Wide rear wing on two small struts.
-  const spoilerMat = new THREE.MeshStandardMaterial({ color: 0x141414 });
-  const spoiler = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.08, 0.4), spoilerMat);
-  spoiler.position.set(0, 1.2, -2.1); g.add(spoiler);
-  for (const x of [-0.7, 0.7]) {
-    const strut = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 0.12), spoilerMat);
-    strut.position.set(x, 1.1, -2.1); g.add(strut);
-  }
+  const spoiler = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.05, 0.22), paintMat);
+  spoiler.position.set(0, 1.04, -2.18); g.add(spoiler);
   const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.32, 10);
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0d0d0d });
   const hubGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.34, 8);
@@ -78,12 +77,36 @@ function buildCarMesh(color) {
     headGlow.scale.set(1.8, 1.8, 1); g.add(headGlow);
   }
   // Red rear light bar — the chase camera mostly sees the back of the car.
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 0.1), new THREE.MeshStandardMaterial({ color: 0x550000, roughness: 0.9, metalness: 0.0, envMapIntensity: 0 }));
-  tail.position.set(0, 0.85, -2.31); g.add(tail);
-  const tailGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff2233, transparent: true, opacity: 0.35, blending: THREE.AdditiveBlending, depthWrite: false }));
-  tailGlow.position.set(0, 0.85, -2.45);
-  tailGlow.scale.set(2.6, 1.3, 1); g.add(tailGlow);
+  const tailMat = new THREE.MeshStandardMaterial({ color: 0x881111, emissive: 0xff2233, emissiveIntensity: 2.6, roughness: 0.5, metalness: 0.0, envMapIntensity: 0 });
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.16, 0.08), tailMat);
+  tail.position.set(0, 0.82, -2.32); g.add(tail);
+  const tailGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff2233, transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false }));
+  tailGlow.position.set(0, 0.82, -2.45);
+  tailGlow.scale.set(3.0, 1.4, 1); g.add(tailGlow);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; }); // v3: real shadows
+  // Rear bumper + exhausts.
+  const bumperMat = new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.4, metalness: 0.6 });
+  const bumper = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.22, 0.14), bumperMat);
+  bumper.position.set(0, 0.42, -2.28);
+  g.add(bumper);
+
+  for (const x of [-1, 1]) {
+    const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.18, 8), chromeMat);
+    exhaust.rotation.x = Math.PI / 2;
+    exhaust.position.set(x * 0.6, 0.42, -2.36);
+    g.add(exhaust);
+  }
+
+  // Ground shadow (never casts).
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(1.0),
+    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.32, depthWrite: false })
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.scale.set(1.6, 2.6, 1);
+  shadow.position.y = 0.02;
+  shadow.castShadow = false;
+  g.add(shadow);
   return g;
 }
 

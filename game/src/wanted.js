@@ -102,9 +102,11 @@ export function buildHelicopter() {
   // Spotlight cone + ground pool live in a SEPARATE unscaled group (the
   // airframe group is scaled 1.3×, which would sink them below the ground).
   const fx = new THREE.Group();
-  const cone = new THREE.Mesh(new THREE.ConeGeometry(2.6, 9.8, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.09, side: THREE.DoubleSide, depthWrite: false }));
-  cone.position.y = 5.8; fx.add(cone); // apex at the belly (~10.7), base on the ground
-  const pool = new THREE.Mesh(new THREE.CircleGeometry(2.8, 20), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.18, depthWrite: false }));
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(3.6, 11, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.26, side: THREE.DoubleSide, depthWrite: false }));
+  cone.position.y = 5.5; fx.add(cone); // apex at the belly (~11.0), base on the ground
+  const coneInner = new THREE.Mesh(new THREE.ConeGeometry(1.6, 11, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.32, side: THREE.DoubleSide, depthWrite: false }));
+  coneInner.position.y = 5.5; fx.add(coneInner); // brighter core beam, same apex/base
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(4.2, 20), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.38, depthWrite: false }));
   pool.rotation.x = -Math.PI / 2; pool.position.y = 0.15; fx.add(pool);
   return { group: g, fx, rotor, tailRotor, beacon, beaconGlow, cone, pool };
 }

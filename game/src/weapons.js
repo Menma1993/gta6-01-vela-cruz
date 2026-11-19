@@ -85,7 +85,7 @@ export function createWeapons(scene) {
       tracerGeo.setFromPoints([new THREE.Vector3(ox, 1.4, oz), new THREE.Vector3(tx, 1.4, tz)]);
       tracer.material.opacity = 0.9;
       flash.position.set(ox, 1.5, oz);
-      flash.intensity = 8;
+      flash.intensity = 11; // r4: brighter muzzle flash so the night shot reads
       const target = nearestEnemy(px, pz, heading);
       if (!target) return { hit: false, killed: false };
       target.hp -= w.damage;

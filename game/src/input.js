@@ -26,7 +26,7 @@ export function createInput(canvas) {
     if (e.repeat) { if (FWD.has(e.code) || BACK.has(e.code) || LEFT.has(e.code) || RIGHT.has(e.code)) held.add(e.code); return; }
     held.add(e.code);
     if (e.code === 'Space' || e.code === 'Enter') actions |= ACT_CONFIRM;
-    else if (e.code === 'KeyF') actions |= ACT_ENTER;
+    else if (e.code === 'KeyF' || e.code === 'KeyE') actions |= ACT_ENTER; // F or E: enter / steal vehicle
     else if (e.code === 'KeyR') actions |= ACT_RELOAD;
     else if (e.code === 'KeyM') actions |= ACT_MAP;
     else if (e.code === 'KeyQ') actions |= ACT_RADIO;

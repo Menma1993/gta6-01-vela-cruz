@@ -289,6 +289,45 @@ export function createCity(seed = 7) {
         glow.position.set(16.6, 8, z);
         scene.add(glow);
       }
+
+      if (z === 130) {
+        const litWindowMat = new THREE.MeshStandardMaterial({ color: 0x3a2a18, emissive: 0xffc46a, emissiveIntensity: 1.6 });
+        const darkWindowMat = new THREE.MeshStandardMaterial({ color: 0x2c3a55, roughness: 0.25, metalness: 0.4 });
+        const colZ = [126.5, 130, 133.5];
+        const rowY = [5.5, 8.5, 11.5, 14.5];
+        for (let row = 0; row < rowY.length; row++) {
+          for (let col = 0; col < colZ.length; col++) {
+            const lit = (row + col) % 2 === 0 || (row === 2 && col === 1);
+            const winGrid = box(0.12, 1.1, 1.4, lit ? 0xffc46a : 0x2c3a55, 16.9, rowY[row], colZ[col]);
+            winGrid.material = lit ? litWindowMat : darkWindowMat;
+            scene.add(winGrid);
+          }
+        }
+
+        const bandY = [3.8, 7.2, 10.6, 14.0];
+        for (const by of bandY) {
+          const band = box(0.14, 0.35, 15.5, 0xC98A2E, 16.92, by, z);
+          scene.add(band);
+        }
+
+        const hotelSign = labelSprite('HOTEL', '#ff5a3c', 56);
+        hotelSign.scale.set(7.5, 1.4, 1);
+        hotelSign.position.set(16.5, 4.6, 130);
+        scene.add(hotelSign);
+        const hotelGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff5a3c, opacity: 0.45, transparent: true }));
+        hotelGlow.scale.set(9, 3, 1);
+        hotelGlow.position.set(16.6, 4.6, 130);
+        scene.add(hotelGlow);
+
+        const shopfront = box(0.2, 2.6, 15.5, 0x8a5a1a, 16.9, 1.3, 130);
+        scene.add(shopfront);
+        const awningL = box(4, 0.25, 2.0, 0x2FA36B, 17.6, 3.0, 126);
+        awningL.rotation.z = 0.12;
+        scene.add(awningL);
+        const awningR = box(4, 0.25, 2.0, 0x2FA36B, 17.6, 3.0, 134);
+        awningR.rotation.z = 0.12;
+        scene.add(awningR);
+      }
     }
   }
 
@@ -323,37 +362,40 @@ export function createCity(seed = 7) {
   // what makes a road read as a road at street level (cover + night shots).
   {
     const markGeo = new THREE.PlaneGeometry(1, 1);
-    const markMat = new THREE.MeshBasicMaterial({ color: 0xd8d8d8 });
+    const markMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
     const marks = [];
-    const put = (x, z, w, d) => marks.push([x, z, w, d]);
+    const put = (x, z, w, d, c) => marks.push([x, z, w, d, c]);
     for (let z = -200; z < 200; z += 12) {
       if (Math.abs(z) < 24) continue; // the bridge has its own markings
-      put(0, z, 0.5, 4); // avenue centre dashes
+      put(0, z, 0.5, 4, 0xd8b13c); // avenue centre dashes
     }
     for (const cz of [-60, 60, 140]) {
       for (const dz of [-10, 10]) {
-        for (let x = -7; x <= 7; x += 2) put(x, cz + dz, 0.7, 3.2); // zebra across the avenue
+        for (let x = -7; x <= 7; x += 2) put(x, cz + dz, 0.45, 2.0, 0xe8ddc4); // zebra across the avenue
       }
       for (let x = -200; x < 200; x += 12) {
         if (Math.abs(x) < 14) continue;
-        put(x, cz, 4, 0.5); // cross-street centre dashes
+        put(x, cz, 4, 0.5, 0xd8b13c); // cross-street centre dashes
       }
     }
     for (const z0 of [[-200, -24], [24, 200]]) {
-      put(-7.4, (z0[0] + z0[1]) / 2, 0.25, z0[1] - z0[0]); // avenue edge lines
-      put(7.4, (z0[0] + z0[1]) / 2, 0.25, z0[1] - z0[0]);
+      put(-7.4, (z0[0] + z0[1]) / 2, 0.25, z0[1] - z0[0], 0xe8ddc4); // avenue edge lines
+      put(7.4, (z0[0] + z0[1]) / 2, 0.25, z0[1] - z0[0], 0xe8ddc4);
     }
     const inst = new THREE.InstancedMesh(markGeo, markMat, marks.length);
     const m4 = new THREE.Matrix4();
     const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
     const pos = new THREE.Vector3();
     const sc = new THREE.Vector3();
-    marks.forEach(([x, z, w, d], i) => {
+    const col = new THREE.Color();
+    marks.forEach(([x, z, w, d, c], i) => {
       pos.set(x, 0.09, z); sc.set(w, d, 1);
       m4.compose(pos, q, sc);
       inst.setMatrixAt(i, m4);
+      inst.setColorAt(i, col.set(c));
     });
     inst.instanceMatrix.needsUpdate = true;
+    if (inst.instanceColor) inst.instanceColor.needsUpdate = true;
     scene.add(inst);
     // Bridge deck dashes (on the deck top, y=0.12).
     const deckMarks = [];
