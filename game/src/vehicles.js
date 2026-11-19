@@ -129,28 +129,54 @@ function buildBoatMesh() {
   // Chrome rub rail along the hull top edge.
   const rail = new THREE.Mesh(new THREE.BoxGeometry(BOAT.width + 0.12, 0.1, BOAT.length), new THREE.MeshStandardMaterial({ color: 0xc4c8ce, roughness: 0.2, metalness: 0.9 }));
   rail.position.y = 1.0; g.add(rail);
-  const deck = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.5, 3.2), new THREE.MeshStandardMaterial({ color: 0xe8e2d0 }));
-  deck.position.set(0, 1.2, -0.4); g.add(deck);
+  // r4c: lower, narrower cockpit deck + centre console + coaming rails, so
+  // the stern stops reading as a flat cream barge top.
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.32, 2.4), new THREE.MeshStandardMaterial({ color: 0xcfc8b4 }));
+  deck.position.set(0, 1.12, -0.7); g.add(deck);
+  const consoleBox = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.65, 0.9), new THREE.MeshStandardMaterial({ color: 0x18202e, roughness: 0.3, metalness: 0.5 }));
+  consoleBox.position.set(0, 1.55, 0.5); g.add(consoleBox);
+  for (const sx of [-1, 1]) {
+    const rail2 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.28, 4.6), new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.4 }));
+    rail2.position.set(sx * 1.05, 1.15, -0.4); g.add(rail2);
+  }
   const shield = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 0.08), new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.08, metalness: 0.0, clearcoat: 1.0 }));
   shield.rotation.x = -0.5;
   shield.position.set(0, 1.65, 1.15); g.add(shield);
-  const motor = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.9, 0.5), new THREE.MeshStandardMaterial({ color: 0x141414 }));
-  motor.position.set(-0.4, 0.8, -3.2); g.add(motor);
-  const motor2 = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.9, 0.5), new THREE.MeshStandardMaterial({ color: 0x141414 }));
-  motor2.position.set(0.4, 0.8, -3.2); g.add(motor2);
+  // Bigger outboards with cowling + cavitation plate — the stern must read
+  // as powered, not empty.
+  const motor = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.1, 0.6), new THREE.MeshStandardMaterial({ color: 0x141414 }));
+  motor.position.set(-0.45, 0.9, -3.3); g.add(motor);
+  const motor2 = new THREE.Mesh(new THREE.BoxGeometry(0.55, 1.1, 0.6), new THREE.MeshStandardMaterial({ color: 0x141414 }));
+  motor2.position.set(0.45, 0.9, -3.3); g.add(motor2);
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.08, 0.7), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.8 }));
+  plate.position.set(0, 0.35, -3.35); g.add(plate);
   const transom = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.5, 0.12), new THREE.MeshStandardMaterial({ color: 0x141414 }));
   transom.position.set(0, 0.85, -3.35); g.add(transom);
   const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.18, BOAT.length), new THREE.MeshStandardMaterial({ color: 0xffd34d }));
   stripe.position.y = 0.85; g.add(stripe);
-  // Wake: a fading white trail behind the hull, so the boat reads as moving.
-  const wake = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 9), new THREE.MeshBasicMaterial({ color: 0xd8f0f5, transparent: true, opacity: 0.45, depthWrite: false }));
+  // Wake: a V of foam spreading behind the stern (not one flat rectangle)
+  // + scattered foam dots, so it reads as spray at speed.
+  const wake = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 10), new THREE.MeshBasicMaterial({ color: 0xe8f6fa, transparent: true, opacity: 0.5, depthWrite: false }));
   wake.rotation.x = -Math.PI / 2;
-  wake.position.set(0, 0.08, -6.2);
+  wake.rotation.z = 0.32;
+  wake.position.set(-1.5, 0.08, -7.5);
   g.add(wake);
-  const wake2 = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 12), new THREE.MeshBasicMaterial({ color: 0xd8f0f5, transparent: true, opacity: 0.22, depthWrite: false }));
+  const wake2 = new THREE.Mesh(new THREE.PlaneGeometry(1.7, 10), new THREE.MeshBasicMaterial({ color: 0xe8f6fa, transparent: true, opacity: 0.5, depthWrite: false }));
   wake2.rotation.x = -Math.PI / 2;
-  wake2.position.set(0, 0.06, -8.5);
+  wake2.rotation.z = -0.32;
+  wake2.position.set(1.5, 0.08, -7.5);
   g.add(wake2);
+  const wakeMid = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 7), new THREE.MeshBasicMaterial({ color: 0xd8f0f5, transparent: true, opacity: 0.28, depthWrite: false }));
+  wakeMid.rotation.x = -Math.PI / 2;
+  wakeMid.position.set(0, 0.06, -6.5);
+  g.add(wakeMid);
+  const foamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false });
+  for (let fi = 0; fi < 8; fi++) {
+    const foam = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.06, 0.35), foamMat);
+    const side = fi % 2 === 0 ? -1 : 1;
+    foam.position.set(side * (1.2 + (fi * 0.35)), 0.09, -4.5 - fi * 1.1);
+    g.add(foam);
+  }
   return g;
 }
 
@@ -170,12 +196,20 @@ function buildPoliceBoatMesh() {
   cab.position.set(0, 1.4, 0.4); g.add(cab);
   const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff2233, emissiveIntensity: 2 }));
   bar.position.set(0, 1.95, 0.4); g.add(bar);
-  const motor = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.9, 0.5), new THREE.MeshStandardMaterial({ color: 0x141414 }));
-  motor.position.set(0, 0.8, -3.2); g.add(motor);
-  const wake = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 8), new THREE.MeshBasicMaterial({ color: 0xd8f0f5, transparent: true, opacity: 0.3, depthWrite: false }));
+  const motor = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.6), new THREE.MeshStandardMaterial({ color: 0x141414 }));
+  motor.position.set(0, 0.9, -3.3); g.add(motor);
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.08, 0.7), new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.8 }));
+  plate.position.set(0, 0.35, -3.35); g.add(plate);
+  const wake = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 9), new THREE.MeshBasicMaterial({ color: 0xe8f6fa, transparent: true, opacity: 0.5, depthWrite: false }));
   wake.rotation.x = -Math.PI / 2;
-  wake.position.set(0, 0.08, -6);
+  wake.rotation.z = 0.32;
+  wake.position.set(-1.3, 0.08, -7);
   g.add(wake);
+  const wake2 = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 9), new THREE.MeshBasicMaterial({ color: 0xe8f6fa, transparent: true, opacity: 0.5, depthWrite: false }));
+  wake2.rotation.x = -Math.PI / 2;
+  wake2.rotation.z = -0.32;
+  wake2.position.set(1.3, 0.08, -7);
+  g.add(wake2);
   return g;
 }
 

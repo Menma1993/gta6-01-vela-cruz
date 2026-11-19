@@ -139,6 +139,26 @@ export function createCity(seed = 7) {
     const m = box(w, h, d, c, x, y, z);
     m.castShadow = true; m.receiveShadow = true; scene.add(m);
   }
+  // r4c: dress the NORTH face of the nearest mesa-top shanty (90,17,20) —
+  // the wide camera sees this face (screen x ~13-256, y ~40-313), NOT the
+  // east face (NDC x -1.3, off-frame). North face is z = 16, spans
+  // x 85..95, y 14..20, normal -Z.
+  const slabFacade = new THREE.Mesh(
+    new THREE.PlaneGeometry(9, 5),
+    new THREE.MeshStandardMaterial({ map: facadeTexture(), roughness: 0.9 })
+  );
+  slabFacade.rotation.y = Math.PI;
+  slabFacade.position.set(90, 17, 15.88);
+  scene.add(slabFacade);
+  for (const [wx, wy] of [[87.5, 15.8], [92.5, 15.8], [87.5, 18.2], [92.5, 18.2]]) {
+    const slabWin = box(1.2, 1.0, 0.12, 0x3a2a18, wx, wy, 15.75);
+    slabWin.material = new THREE.MeshStandardMaterial({
+      color: 0x3a2a18,
+      emissive: 0xffc46a,
+      emissiveIntensity: 1.6,
+    });
+    scene.add(slabWin);
+  }
   // Antenna mast + billboard on the mesa top: vertical accents for the skyline.
   const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.4, 22, 6), new THREE.MeshStandardMaterial({ color: 0x3a3a3a }));
   mast.position.set(120, 25, 40); mast.castShadow = true; scene.add(mast);
@@ -190,8 +210,46 @@ export function createCity(seed = 7) {
           scene.add(glow);
         }
       }
-      // Scree strip at the wall base + scattered boulders.
-      // v3.3: boulders use their OWN prng (seed+999) — drawing them from the
+      // r4c: BIG wall dressing — large painted panels on the river-facing
+      // face (they must read at 100-270 m at a grazing angle) + one big
+      // wall-top sign per segment. Face toward the river is at
+      // z = wz - sign(wz)*5; panels sit 0.3 m proud of it.
+      const panelColors = [0xc96a2e, 0x2e7d6b, 0xb98a2e, 0x8a4a4a];
+      let pi = 0;
+      for (let bx = x0 + 25; bx < x1 - 15; bx += 50) {
+        const panel = new THREE.Mesh(
+          new THREE.BoxGeometry(11, 4.6, 0.4),
+          new THREE.MeshStandardMaterial({ color: panelColors[pi % 4], roughness: 1 })
+        );
+        panel.position.set(bx, 3.4, wz - Math.sign(wz) * 5.3);
+        panel.castShadow = true;
+        scene.add(panel);
+        const panelTrim = new THREE.Mesh(
+          new THREE.BoxGeometry(11.4, 0.35, 0.45),
+          new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 })
+        );
+        panelTrim.position.set(bx, 5.9, wz - Math.sign(wz) * 5.3);
+        scene.add(panelTrim);
+        pi++;
+      }
+      // Wall-top sign: dark backing + camera-facing label + glow, one per
+      // segment at its midpoint, text varies by segment so the skyline reads.
+      const wallSignTexts = ['PORT VELA', 'CANAL ROW', 'OLD CROSSING', 'MESA VERDE'];
+      const wallSignIdx = (wz < 0 ? 0 : 2) + (x0 < 0 ? 0 : 1);
+      const wsx = (x0 + x1) / 2;
+      const wsBack = box(0.6, 4.5, 13, 0x1a1a1a, wsx, 9.4, wz);
+      scene.add(wsBack);
+      const wsLabel = labelSprite(wallSignTexts[wallSignIdx], '#ffd34d', 64);
+      wsLabel.scale.set(11, 2.4, 1);
+      wsLabel.position.set(wsx, 9.4, wz);
+      scene.add(wsLabel);
+      const wsGlow = new THREE.Sprite(
+        new THREE.SpriteMaterial({ map: glowTex, color: 0xffd34d, transparent: true, opacity: 0.35, depthWrite: false })
+      );
+      wsGlow.scale.set(12, 3.2, 1);
+      wsGlow.position.set(wsx, 9.4, wz);
+      scene.add(wsGlow);
+      // Scree strip at the wall base + scattered boulders.      // v3.3: boulders use their OWN prng (seed+999) — drawing them from the
       // city's rnd() shifted the stream and moved every building, including
       // one into the river in front of the boat camera.
       const brnd = (() => { let s2 = (seed + 999) | 0; return () => { s2 = (s2 * 1664525 + 1013904223) | 0; return ((s2 >>> 0) / 4294967296); }; })();
@@ -585,41 +643,44 @@ export function createCity(seed = 7) {
   scene.add(facades);
   scene.add(windows);
 
-  // --- Vanishing-point downtown building dress-up (seeded bldg @ -155.8,-44.5) ---
+  // --- Vanishing-point downtown building dress-up (seeded bldg @ -155.8,-44.5), EAST FACE ---
   const vpFacade = new THREE.Mesh(
-    new THREE.PlaneGeometry(18, 20),
+    new THREE.PlaneGeometry(11, 20),
     new THREE.MeshStandardMaterial({ map: facadeTexture(), roughness: 0.9 })
   );
-  vpFacade.position.set(-155.8, 17, -38.4);
+  vpFacade.rotation.y = Math.PI / 2;
+  vpFacade.position.set(-144.8, 17, -44.5);
   scene.add(vpFacade);
 
   const vpWinSpots = [
-    [12, -5], [12, 5],
-    [17, -5], [17, 5],
-    [22, -5], [22, 5],
+    [12, -3.5], [12, 3.5],
+    [17, -3.5], [17, 3.5],
+    [22, -3.5], [22, 3.5],
   ];
-  vpWinSpots.forEach(([y, xOff]) => {
-    const vpWin = box(0.12, 1.1, 1.4, 0x3a2a18, -155.9 + xOff, y, -38.35);
+  vpWinSpots.forEach(([y, zOff]) => {
+    const vpWin = box(0.12, 1.7, 2.0, 0x3a2a18, -144.8, y, -44.5 + zOff);
     vpWin.material = new THREE.MeshStandardMaterial({
       color: 0x3a2a18,
       emissive: 0xffc46a,
-      emissiveIntensity: 1.6,
+      emissiveIntensity: 2.2,
     });
     scene.add(vpWin);
   });
 
+  const vpBillboardBack = box(0.6, 3, 14, 0x1a1a1a, -145.2, 30.2, -44.5);
+  scene.add(vpBillboardBack);
+
   const vpLabel = labelSprite('VELA CRUZ', '#ffd34d', 72);
-  vpLabel.scale.set(12, 2.2, 1);
-  vpLabel.position.set(-155.8, 30.2, -44.0);
+  vpLabel.scale.set(20, 3.6, 1);
+  vpLabel.position.set(-144.0, 30.2, -44.5);
   scene.add(vpLabel);
 
   const vpGlow = new THREE.Sprite(
     new THREE.SpriteMaterial({ map: glowTex, color: 0xffd34d, transparent: true, opacity: 0.4 })
   );
-  vpGlow.scale.set(13, 3, 1);
-  vpGlow.position.set(-155.8, 30.2, -44.0);
+  vpGlow.scale.set(21, 4.2, 1);
+  vpGlow.position.set(-144.0, 30.2, -44.5);
   scene.add(vpGlow);
-
   // v3: roof props on the downtown towers — AC boxes, vents and an antenna
   // per tower, so the skyline has a roofline instead of flat caps.
   for (const t of towers) {
@@ -730,6 +791,38 @@ export function createCity(seed = 7) {
   scene.add(slabLight);
   neonLights.push({ light: slabLight, on: 7 });
 
+  // r4c: club EAST face (x = -97) — the face the night camera actually
+  // sees. Lit window plane + vertical neon strips + pink spill light, so
+  // the left of the frame stops being a black slab. East face spans
+  // z 47..63, y 0..12; camera sits east of it, so everything faces +X.
+  const clubEastWin = new THREE.Mesh(
+    new THREE.PlaneGeometry(14, 10),
+    winMat
+  );
+  clubEastWin.position.set(-96.9, 5.5, 55);
+  clubEastWin.rotation.y = Math.PI / 2;
+  scene.add(clubEastWin);
+  const clubEastNeon = box(0.3, 9, 0.65, 0xff2e88, -96.9, 6, 50, { emissive: 0xff2e88, ei: 2.0 });
+  scene.add(clubEastNeon);
+  const clubEastNeon2 = box(0.3, 9, 1.1, 0x00e5ff, -96.9, 6, 60, { emissive: 0x00e5ff, ei: 2.4 });
+  scene.add(clubEastNeon2);
+  const clubEastGlow = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: glowTex, color: 0xff2e88, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending })
+  );
+  clubEastGlow.scale.set(3, 9, 1);
+  clubEastGlow.position.set(-96.6, 6, 50);
+  scene.add(clubEastGlow);
+  const clubEastGlow2 = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: glowTex, color: 0x00e5ff, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending })
+  );
+  clubEastGlow2.scale.set(4, 10, 1);
+  clubEastGlow2.position.set(-96.6, 6, 60);
+  scene.add(clubEastGlow2);
+  const clubEastLight = new THREE.PointLight(0xff2e88, 0, 26, 1.2);
+  clubEastLight.position.set(-94, 6, 55);
+  scene.add(clubEastLight);
+  neonLights.push({ light: clubEastLight, on: 6 });
+
   // v5: wet-only neon reflection streaks on the plaza (pink + cyan).
   for (const [color, x, z] of [[0xff2e88, -108, 44], [0x00e5ff, -94, 70]]) {
     const m = new THREE.Mesh(
@@ -762,6 +855,37 @@ export function createCity(seed = 7) {
     pools.push(pool);
   }
   const dock = box(18, 1, 8, 0x6b4a2f, -24, 0.6, 44); scene.add(dock);
+
+  // r4c: moored barge mid-river (reads in wide + boat shots) + buoys.
+  // Barge sits at (5, -11): east of the hero boat's start (-30, 0), clear
+  // of the bridge span (x = 0 is the bridge gap — the barge is south of
+  // the channel centre, not under the lift span) and clear of the HUD
+  // dialogue panel (bottom-centre) from both cameras.
+  const bargeHull = new THREE.Mesh(
+    new THREE.BoxGeometry(8, 1.2, 3.6),
+    new THREE.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.8, metalness: 0.2 })
+  );
+  bargeHull.position.set(5, 0.5, -11);
+  bargeHull.castShadow = true;
+  scene.add(bargeHull);
+  const bargeCrate1 = box(1.6, 1.6, 1.6, 0xc96a2e, 3, 1.7, -11);
+  scene.add(bargeCrate1);
+  const bargeCrate2 = box(1.6, 1.6, 1.6, 0x2e7d6b, 6.5, 1.7, -11);
+  scene.add(bargeCrate2);
+  const bargeCabin = box(2.2, 1.4, 2.4, 0xe8e2d0, 7.5, 1.6, -11);
+  scene.add(bargeCabin);
+  const bargeMast = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.09, 0.12, 4.5, 6),
+    new THREE.MeshStandardMaterial({ color: 0x333333 })
+  );
+  bargeMast.position.set(1.5, 3, -11);
+  scene.add(bargeMast);
+  const buoyMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.7 });
+  for (const [bx, bz] of [[-30, 10], [30, -10], [60, 9]]) {
+    const buoy = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 8), buoyMat);
+    buoy.position.set(bx, 0.35, bz);
+    scene.add(buoy);
+  }
   for (let i = 0; i < 10; i += 1) {
     const px = i % 2 === 0 ? -12 : 12;
     const pz = -160 + i * 36;
