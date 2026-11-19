@@ -6,12 +6,25 @@ import { PLAYER, CAR, BOAT } from './config.js';
 
 function buildCarMesh(color) {
   const g = new THREE.Group();
-  // F3: hero car. Deep clearcoat paint that actually picks up the PMREM sunset
-  // env, headlights and tail bar glowing against golden hour, wide wing on struts.
-  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.8, CAR.length), new THREE.MeshPhysicalMaterial({ color, roughness: 0.18, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.08, envMapIntensity: 1.2 }));
-  body.position.y = 0.7; g.add(body);
-  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 2.0), new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.08, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 0.5 }));
-  cabin.position.set(0, 1.4, -0.3); g.add(cabin);
+  // F3: hero car — "Solano GT". Low, wide sports coupe: a shallow main body, a
+  // raked bonnet wedge, a short greenhouse pushed rearward, a flat decklid under
+  // the wing. Deep clearcoat paint that actually picks up the PMREM sunset env,
+  // headlights and tail bar glowing against golden hour, wide wing on struts.
+  const paintMat = new THREE.MeshPhysicalMaterial({ color, roughness: 0.18, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.08, envMapIntensity: 1.2 });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.66, CAR.length), paintMat);
+  body.position.y = 0.66; g.add(body);
+  // Raked bonnet wedge over the front axle — the long tapering nose.
+  const hood = new THREE.Mesh(new THREE.BoxGeometry(CAR.width * 0.94, 0.16, 1.5), paintMat);
+  hood.rotation.x = 0.09; hood.position.set(0, 0.94, 1.5); g.add(hood);
+  // Low greenhouse: shorter, lower, shifted back and tipped nose-down.
+  const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.46, 1.45), new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.08, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 0.5 }));
+  cabin.rotation.x = 0.1; cabin.position.set(0, 1.15, -0.55); g.add(cabin);
+  // Flat rear decklid sitting under the wing struts.
+  const deck = new THREE.Mesh(new THREE.BoxGeometry(CAR.width * 0.9, 0.08, 0.75), paintMat);
+  deck.position.set(0, 1.01, -1.95); g.add(deck);
+  // Front splitter tucked under the nose.
+  const splitter = new THREE.Mesh(new THREE.BoxGeometry(CAR.width * 0.98, 0.07, 0.4), new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.4, metalness: 0.6 }));
+  splitter.position.set(0, 0.34, 2.12); g.add(splitter);
   // Dark grille strip across the nose.
   const grille = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.08), new THREE.MeshStandardMaterial({ color: 0x0b0b0b, roughness: 0.4, metalness: 0.6 }));
   grille.position.set(0, 0.55, 2.3); g.add(grille);
@@ -20,9 +33,9 @@ function buildCarMesh(color) {
   const mirrorMat = new THREE.MeshStandardMaterial({ color: 0x141a24, roughness: 0.1, metalness: 0.8 });
   for (const x of [-1, 1]) {
     const skirt = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.1, CAR.length * 0.7), chromeMat);
-    skirt.position.set(x * (CAR.width / 2), 0.4, 0); g.add(skirt);
+    skirt.position.set(x * (CAR.width / 2), 0.36, 0); g.add(skirt);
     const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.14, 0.12), mirrorMat);
-    mirror.position.set(x * 1.0, 1.35, 0.75); g.add(mirror);
+    mirror.position.set(x * 1.0, 1.02, 0.3); g.add(mirror);
   }
   // Wide rear wing on two small struts.
   const spoilerMat = new THREE.MeshStandardMaterial({ color: 0x141414 });
@@ -36,7 +49,7 @@ function buildCarMesh(color) {
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0d0d0d });
   const hubGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.34, 8);
   const hubMat = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, roughness: 0.25, metalness: 0.8 });
-  for (const [x, z] of [[-1.0, 1.45], [1.0, 1.45], [-1.0, -1.45], [1.0, -1.45]]) {
+  for (const [x, z] of [[-1.06, 1.45], [1.06, 1.45], [-1.06, -1.45], [1.06, -1.45]]) {
     const w = new THREE.Mesh(wheelGeo, wheelMat);
     w.rotation.z = Math.PI / 2; w.position.set(x, 0.45, z); g.add(w);
     const hub = new THREE.Mesh(hubGeo, hubMat);
@@ -176,7 +189,7 @@ export function createParkedCars(scene) {
 }
 
 export function createPlayer(scene) {
-  const carMesh = buildCarMesh(0xE8442E);
+  const carMesh = buildCarMesh(0xC81E1E);
   const figureMesh = buildFigureMesh();
   const boatMesh = buildBoatMesh();
   scene.add(carMesh); scene.add(figureMesh); scene.add(boatMesh);

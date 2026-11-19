@@ -359,7 +359,8 @@ export function createCity(seed = 7) {
     const beam = box(19.5, 1.6, 2, 0x8a6a44, 0, 15.2, tz); beam.castShadow = true; scene.add(beam);
   }
   const bridgeSign = labelSprite('VELA CRUZ BRIDGE', '#ffd34d', 52);
-  bridgeSign.position.set(0, 19, -34); scene.add(bridgeSign);
+  bridgeSign.scale.set(18, 3.35, 1);
+  bridgeSign.position.set(0, 16.2, -34); scene.add(bridgeSign);
 
   // Buildings: seeded low-poly blocks along the streets, kept off roads/river.
   // One InstancedMesh for all facades (instanceColor per district palette)
@@ -446,11 +447,15 @@ export function createCity(seed = 7) {
   colliders.push({ x0: -123, z0: 47, x1: -97, z1: 63 });
   const neonColors = [0xff2e88, 0x00e5ff, 0xffd400, 0x7cff4d, 0xff6b00];
   neonColors.forEach((c, i) => {
-    const sign = box(8 + (i % 2) * 3, 1.6, 0.6, 0x111111, -118 + i * 4.5, 10 + (i % 2) * 2.5, 46.8, { emissive: c, ei: 2.2 });
+    const ny = 7.5 + (i % 2) * 1.8;
+    const back = box(8 + (i % 2) * 3, 1.6, 0.2, 0x111111, -118 + i * 4.5, ny, 46.95);
+    scene.add(back);
+    const sign = box(8 + (i % 2) * 3, 1.6, 0.6, 0x111111, -118 + i * 4.5, ny, 46.9, { emissive: c, ei: 2.2 });
     scene.add(sign);
   });
   const clubSign = labelSprite('CLUB VOLTAGE', '#ff2e88', 56);
-  clubSign.position.set(-110, 15.5, 46); scene.add(clubSign);
+  clubSign.scale.set(15, 2.8, 1);
+  clubSign.position.set(-110, 14, 46); scene.add(clubSign);
   const mileSign = labelSprite('NEON MILE', '#00e5ff', 48);
   mileSign.position.set(-110, 20, 60); scene.add(mileSign);
   // v3: the club's north face gets a lit window strip (it was a black wall
@@ -514,7 +519,8 @@ export function createCity(seed = 7) {
     const b = box(14, 8, 12, 0x6b4a2f, s.x, 4, s.z); scene.add(b);
     colliders.push({ x0: s.x - 7, z0: s.z - 6, x1: s.x + 7, z1: s.z + 6 });
     const lab = labelSprite(s.name.toUpperCase(), '#ffd34d', 46);
-    lab.position.set(s.x, 10.5, s.z); scene.add(lab);
+    lab.scale.set(12, 2.24, 1);
+    lab.position.set(s.x, 9.5, s.z); scene.add(lab);
   }
 
   // Port Vela dock + a moored speedboat hull; street lamps along the avenue.
@@ -689,8 +695,17 @@ export function createCity(seed = 7) {
       // v4: neon spill lights live only after dark (with a faint glow at dusk).
       for (const n of neonLights) n.light.intensity = night ? n.on : (hour >= 17.5 && hour < 19 ? n.on * 0.35 : 0);
       playerLight.intensity = night ? 4.5 : (hour >= 17.5 && hour < 19 ? 0.7 : 0);
-      // Water takes the sky + sun so the river mirrors the hour.
-      water.setSky(pal.fog, sky.uniforms.uSunDir.value, s2.sun);
+      // Water sky is deliberately DECOUPLED from the fog colour: at golden hour
+      // pal.fog is a warm orange, and feeding it to the shader turned the river
+      // into an orange mirror that read as lava. Water keeps its own blue/teal
+      // sky so it always looks like water, even under a sunset sky.
+      const waterSky = (hour >= 6 && hour < 7.5) ? 0x7d9ab5
+        : (hour >= 7.5 && hour < 16) ? 0x9fc3d8
+        : (hour >= 16 && hour < 18.5) ? 0x6fa8c0
+        : (hour >= 18.5 && hour < 20) ? 0x5a7a94
+        : 0x1a2a4a;
+      // The sun direction + colour still follow the hour, so the glint ages too.
+      water.setSky(waterSky, sky.uniforms.uSunDir.value, s2.sun);
     },
     /** Keep the sun (and its shadow frustum) centred on the player. */
     followSun(px, pz) {

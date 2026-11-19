@@ -57,7 +57,7 @@ export function createHud() {
       $('missionSub').textContent = `STORY ${state.save.storyDone} / 8 · REP ${state.save.rep} · ${state.save.repProgress}%`;
       const next = state.nextJob;
       $('missionNext').textContent = next ? `NEXT ▸ ${next.name} — ${money(next.pay)}` : 'NEXT ▸ —';
-      const rows = state.policeRows.map((r) => `<tr><td>${r.name}</td><td class="d">${r.dist} m</td><td class="s">${r.state}</td></tr>`).join('');
+      const rows = state.policeRows.map((r) => `<tr><td>${r.name}</td><td class="d">${r.dist} m</td><td class="s"><span class="pill pill-${({ RAMMING: 'ramming', SPOTLIGHT: 'spotlight', PURSUIT: 'pursuit', ROADBLOCK: 'roadblock' })[r.state] || 'pursuit'}">${r.state}</span></td></tr>`).join('');
       $('vcpdTable').innerHTML = rows;
       $('pursuitBanner').style.display = 'none'; // v7: banner removed — top entries have no centre banner
       $('vcpdTag').textContent = state.wanted >= 3 ? 'IN SIGHT' : state.wanted > 0 ? 'PURSUIT' : 'CLEAR';

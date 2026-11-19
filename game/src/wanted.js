@@ -69,7 +69,7 @@ export function buildHelicopter() {
   // Tail boom + TALL TAIL FIN (2.8 high) + tail rotor.
   const boom = new THREE.Mesh(new THREE.BoxGeometry(1.1, 1.0, 5.2), navy);
   boom.position.set(0, 0.25, -5.4); g.add(boom);
-  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 1.9), new THREE.MeshStandardMaterial({ color: 0x1d3a5c }));
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 1.9), new THREE.MeshStandardMaterial({ color: 0x4a6b94 }));
   fin.position.set(0, 1.5, -7.6); g.add(fin);
   const tailRotor = new THREE.Group();
   for (let i = 0; i < 2; i += 1) {
@@ -86,7 +86,7 @@ export function buildHelicopter() {
     const blade = new THREE.Mesh(new THREE.BoxGeometry(11.5, 0.14, 0.9), new THREE.MeshStandardMaterial({ color: 0x1a1a1a }));
     blade.rotation.y = (i * Math.PI) / 2; rotor.add(blade);
   }
-  const disc = new THREE.Mesh(new THREE.CircleGeometry(5.8, 28), new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.38, side: THREE.DoubleSide }));
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(5.8, 28), new THREE.MeshBasicMaterial({ color: 0x222222, transparent: true, opacity: 0.25, side: THREE.DoubleSide }));
   disc.rotation.x = -Math.PI / 2; rotor.add(disc);
   g.add(rotor);
   // Red beacon glow — a soft halo so the belly beacon reads at a distance.
@@ -102,9 +102,9 @@ export function buildHelicopter() {
   // Spotlight cone + ground pool live in a SEPARATE unscaled group (the
   // airframe group is scaled 1.3×, which would sink them below the ground).
   const fx = new THREE.Group();
-  const cone = new THREE.Mesh(new THREE.ConeGeometry(4.5, 10.7, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.17, side: THREE.DoubleSide, depthWrite: false }));
-  cone.position.y = 5.4; fx.add(cone); // apex at the belly (~10.7), base on the ground
-  const pool = new THREE.Mesh(new THREE.CircleGeometry(4.5, 20), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.28, depthWrite: false }));
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(2.6, 9.8, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.09, side: THREE.DoubleSide, depthWrite: false }));
+  cone.position.y = 5.8; fx.add(cone); // apex at the belly (~10.7), base on the ground
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(2.8, 20), new THREE.MeshBasicMaterial({ color: 0xfff6c0, transparent: true, opacity: 0.18, depthWrite: false }));
   pool.rotation.x = -Math.PI / 2; pool.position.y = 0.15; fx.add(pool);
   return { group: g, fx, rotor, tailRotor, beacon, beaconGlow, cone, pool };
 }

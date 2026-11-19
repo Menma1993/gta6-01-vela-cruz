@@ -202,7 +202,7 @@ export function createSky(scene) {
   const PALETTES = [
     { lo: 5.5,  hi: 7.5,  top: 0x1b3a66, mid: 0x4a6a93, horizon: 0xd79a6a, sun: 0xffcf9a, sunI: 0.65, sunY: 0.12, fog: 0x6a7a92, halo: 0xffb877, glow: 0x241a30, night: 0.35, haze: 1.0,  disc: 1.1 }, // dawn blue hour, warm band
     { lo: 7.5,  hi: 16.0, top: 0x2e6cb4, mid: 0x92bedd, horizon: 0xe4dcc0, sun: 0xfff6e0, sunI: 1.0,  sunY: 0.55, fog: 0xcfd8dc, halo: 0xffe6bd, glow: 0x000000, night: 0.0, haze: 0.85, disc: 1.0 }, // day
-    { lo: 16.0, hi: 18.5, top: 0x4a2b6b, mid: 0xc65d8a, horizon: 0xf59a3e, sun: 0xfff3c4, sunI: 1.35, sunY: 0.07, fog: 0xe08a55, halo: 0xff9a5c, glow: 0x000000, night: 0.0,  haze: 1.0,  disc: 1.7 }, // golden hour, Vice-style purple-to-orange sunset gradient, big low sun
+    { lo: 16.0, hi: 18.5, top: 0x4a2b6b, mid: 0xc65d8a, horizon: 0xf59a3e, sun: 0xfff3c4, sunI: 1.35, sunY: 0.07, sunX: 0, sunZ: -1, fog: 0xe08a55, halo: 0xff9a5c, glow: 0x000000, night: 0.0,  haze: 1.0,  disc: 1.7 }, // golden hour, Vice-style purple-to-orange sunset gradient, big low sun; azimuth due north so the disc sits at the avenue vanishing point
     { lo: 18.5, hi: 20.0, top: 0x2a1b4a, mid: 0x8a4a72, horizon: 0xe86a3c, sun: 0xff9a5a, sunI: 0.8,  sunY: 0.03, fog: 0x7a4a55, halo: 0xff6a3a, glow: 0x2a1830, night: 0.45, haze: 1.0,  disc: 1.4 }, // dusk, violet sky, ember horizon, sun on the deck
     { lo: 20.0, hi: 24.0, top: 0x060a1a, mid: 0x0c1430, horizon: 0x1a2a4a, sun: 0xbfcfe0, sunI: 0.4,  sunY: 0.45, fog: 0x10182e, halo: 0x5a7aa0, glow: 0x3a2e3a, night: 1.0,  haze: 0.7,  disc: 1.0 }, // night, city-glow horizon
     { lo: 0.0,  hi: 5.5,  top: 0x060a1a, mid: 0x0c1430, horizon: 0x1a2a4a, sun: 0xbfcfe0, sunI: 0.4,  sunY: 0.45, fog: 0x10182e, halo: 0x5a7aa0, glow: 0x3a2e3a, night: 1.0,  haze: 0.7,  disc: 1.0 }, // night
@@ -212,6 +212,9 @@ export function createSky(scene) {
     const h = ((hour % 24) + 24) % 24;
     let p = PALETTES[PALETTES.length - 1];
     for (const e of PALETTES) { if (h >= e.lo && h < e.hi) { p = e; break; } }
+    // Per-palette sun azimuth. Entries without sunX/sunZ keep the legacy (-0.55, -0.6).
+    const sunX = (p.sunX === undefined) ? -0.55 : p.sunX;
+    const sunZ = (p.sunZ === undefined) ? -0.6 : p.sunZ;
     uniforms.uTop.value.setHex(p.top);
     uniforms.uMid.value.setHex(p.mid);
     uniforms.uHorizon.value.setHex(p.horizon);
@@ -223,7 +226,7 @@ export function createSky(scene) {
     uniforms.uHaze.value = p.haze;
     uniforms.uDisc.value = p.disc;
     // p.sunY is the sun direction's y-component (not degrees, unlike v4).
-    uniforms.uSunDir.value.set(-0.55, p.sunY, -0.6).normalize(); // azimuth fixed over Neon Mile
+    uniforms.uSunDir.value.set(sunX, p.sunY, sunZ).normalize(); // azimuth per palette (golden hour due north, down the avenue)
     // Return contract kept as v4: sunY in degrees, sunColor as a hex number.
     const sunY = Math.asin(Math.min(1, Math.max(-1, p.sunY))) * 180 / Math.PI;
     return { fog: p.fog, sunY, sunColor: p.sun, sunI: p.sunI };
@@ -311,14 +314,15 @@ export function createWater(scene, half = 210, riverHalf = 16) {
         vec3 glintCol = mix(uSunColor, vec3(1.0), 0.35);
         float glintT = 0.10 + 0.90 * warm;        // dawn 0.10, gold 1.0: sun lane tint only
         float glintH = glintT * glintT;           // hard hits gate quadratically, so dawn ~0
+        // golden-hour glint/sparkle coefficients trimmed so the water stays blue with a sun lane, not a lava field
         col += glintCol * pow(sd, 7.0) * 0.10 * laneF;                    // soft sun lane, dawn-safe
-        col += glintCol * pow(sd, 45.0) * 0.30 * laneF * glintT;          // warm sheen on the lane
-        col += glintCol * pow(sd, 320.0) * 0.45 * laneF * glintH;         // hard core: gold only
+        col += glintCol * pow(sd, 45.0) * 0.20 * laneF * glintT;          // warm sheen on the lane
+        col += glintCol * pow(sd, 320.0) * 0.22 * laneF * glintH;         // hard core: gold only
 
         // sparkle pinpricks: low enough frequency to survive chase-cam range
         float sp = smoothstep(0.58, 0.94, a * b * 2.3);
-        col += glintCol * sp * pow(sd, 3.0) * 0.45 * (0.35 + 0.85 * F) * glintH;
-        col += glintCol * smoothstep(0.66, 0.96, b * c * 2.1) * pow(sd, 6.0) * 0.30 * glintH;
+        col += glintCol * sp * pow(sd, 3.0) * 0.22 * (0.35 + 0.85 * F) * glintH;
+        col += glintCol * smoothstep(0.66, 0.96, b * c * 2.1) * pow(sd, 6.0) * 0.15 * glintH;
 
         // shore foam: irregular width and breakup instead of a painted line
         float fn = texture2D(uNoise, vec2(p.x * 0.16 - t * 0.025, p.y * 1.10 + 0.37)).r;

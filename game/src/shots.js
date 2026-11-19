@@ -143,9 +143,20 @@ export function stageShot(name, G) {
     stealCar.rotation.y = 2.6; // three-quarter front toward the camera
     stealCar.visible = true;
     stageTrafficNear(G, [[5, 20]], [[0, -118, 30], [1, -100, 24], [2, -90, 34]]);
-    // v4.3: aim a touch higher (y=4) so the CLUB VOLTAGE sign, just above
-    // the frame edge in v4.2, reads again — the car + player stay centred.
-    cam = [-90, 6.0, 26, -100, 4, 40];
+    // v4.5: keeps v4.4's framing goal (full CLUB VOLTAGE sign in frame with
+    // margin, Solano GT + player centred in the lower half) but the camera
+    // MUST stay north of the Vela River canyon wall: that box is centred at
+    // z = +26 with 10 m depth, so its north face is z = 31, and v4.4's z = 16
+    // sat south of it with the 9 m wall 10 m in front of the lens, filling
+    // the whole frame. Constraint: camera z >= 33 (wall face + clearance).
+    // Verified from (-84, 7, 34) -> (-102, 5, 43): the wall (z 21..31) is
+    // behind the lens; view axis heading -63.4 deg; sign centre (-110, 14, 46)
+    // is only ~1.9 deg off-axis at 28.6 m, and its 7.5 m half-width subtends
+    // ~14.7 deg, so the whole 15 m sign spans ~13-17 deg off centre — far
+    // inside the ~47 deg horizontal half-FOV (FOV 62 vertical, 1280x720).
+    // Car (-104, 42) ~5 deg and player (-99, 37) ~15 deg off-axis, both below
+    // the view axis, so they stay centred-ish in the lower half.
+    cam = [-84, 7, 34, -102, 5, 43];
   } else if (name === 'boat') {
     // 4 — DAWN RIVER CHASE: blue-hour mist, wake + spray, bridge arches
     // overhead, pursuit boats + helicopter. Police cars stay off the water.
@@ -172,28 +183,38 @@ export function stageShot(name, G) {
     // and hid the boat, the pursuit boats and the heli.
     cam = [-56, 8, 2, 25, 1, -2];
   } else {
-    // cover v7 — 5-star chase on the Palm Boulevard beachfront, not the bridge:
-    // golden hour 18:00, low rear-left 3/4 chase cam with the hero car big in
-    // frame, wet asphalt running to the low sun, heli + searchlight overhead,
-    // lit traffic ahead and pedestrians on the sand-side sidewalks. No centre toast.
+    // cover v8 — 5-star chase down Palm Boulevard, not on the bridge:
+    // golden hour 18:00, low rear-left 3/4 chase cam with the hero car just
+    // right of centre, wet asphalt running north to the low sun at the
+    // avenue's vanishing point (upper-left), heli high in the upper sky near
+    // centre, lit traffic ahead up the boulevard and pedestrians on the
+    // sand-side sidewalks. Player sits ~150 m south of the bridge so the
+    // near/mid frame is boulevard (palms both sides, east buildings right,
+    // sand promenade left) and the arch is small and hazed at the vanish.
     Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 18.0, complete: 68 });
     G.city.setHour(18.0);
     G.renderer.setExposure(1.05);
-    G.player.setMode('car', 0, 100, Math.PI);
+    G.player.setMode('car', 0, 150, Math.PI); // z=150, heading north up the boulevard
     G.player.speed = 42.8; // 154 km/h
     G.player.drive(0, 0, 0, false, G.city.colliders);
     G.wanted.setWanted(5);
-    G.wanted.setHeli(16, 11, -8);
+    // 28 m ahead (z≈122), 16 m up, 2 m east of the player's axis: reads as a
+    // medium helicopter high and just left of frame centre, off the sun disc.
+    G.wanted.setHeli(28, 16, -2);
     baseUi(G, save);
     G.ui.location = 'PALM BOULEVARD · Vela Cruz';
     G.ui.dialogue = { ...CHARACTERS.mara, line: 'Lose that helicopter before you bring the money to my garage!' };
     G.ui.stolen = true;
     G.city.setWet(true);
     G.traffic.setNight(true);
-    stageTrafficNear(G, [[0, 62], [1, 78], [8, 42], [9, 90]], [[0, -11, 82], [1, 11, 66], [2, -11, 56], [3, 11, 92]]);
-    // v7: 7.8 m behind, 3.8 m to the left, 2.4 m up — hero car fills the frame,
-    // road and sun vanish up the avenue, heli + beam still in shot.
-    cam = [-3.8, 2.4, 107.8, 0.5, 2.0, 60];
+    stageTrafficNear(G, [[0, 134], [1, 121], [8, 107], [9, 96]], [[0, -11, 140], [1, 11, 128], [2, -11, 113], [3, 11, 119]]);
+    // v8: 8 m behind the car (z=158), 2.5 m to its left, 2.4 m up. lookAt is
+    // swung to +6 in x at z=110 so the view axis crosses the car's lane just
+    // left of the hero car instead of clipping it:
+    // axisX(150) = -2.5 + (6 + 2.5) * (158 - 150) / (158 - 110) = -1.08
+    // -> car centre ~1.1 m right of the axis at 8 m, i.e. ~56% of frame width,
+    // rear 3/4 intact, while the road/bridge/sun vanish upper-left of centre.
+    cam = [-2.5, 2.4, 158, 6, 1.8, 110];
   }
   syncHud(G, lookH, back);
   if (cam) G.renderer.setCam(...cam);

@@ -25,6 +25,11 @@
   #vcpd td { padding: 1px 0; }
   #vcpd td.d { text-align: right; color: #c8ccd4; }
   #vcpd td.s { text-align: right; color: #ffb020; font-weight: 700; }
+  #vcpd td.s .pill { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; color: #fff; }
+  .pill-ramming { background: #E5484D; }
+  .pill-spotlight { background: #3E7BFA; }
+  .pill-pursuit { background: #F59A3E; color: #201600; }
+  .pill-roadblock { background: #F5B81D; color: #201600; }
   #badges { position: absolute; top: 168px; left: 12px; display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
   .badge { background: rgba(8,10,16,0.82); border: 1px solid rgba(255,255,255,0.14); border-radius: 6px; padding: 6px 10px; font-weight: 700; font-size: 13px; }
   .badge.warn { background: #ffc93c; color: #201600; border-color: #ffc93c; }
@@ -48,18 +53,18 @@
   #portrait { width: 52px; height: 52px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 26px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 3px solid #FFB020; flex: none; overflow: hidden; padding: 0; }
   #dialogue .who { color: #FFB020; font-weight: 800; font-size: 15px; }
   #dialogue .line { font-size: 14px; line-height: 1.3; }
-  #weapons { position: absolute; right: 12px; bottom: 96px; display: flex; gap: 6px; }
+  #weapons { position: absolute; right: 12px; bottom: 112px; display: flex; gap: 6px; }
   .wslot { width: 76px; background: rgba(8,10,16,0.8); border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; padding: 6px 4px; text-align: center; font-size: 11px; font-weight: 700; }
   .wslot.sel { border-color: #FFB020; box-shadow: 0 0 0 1px #FFB020; }
   .wslot .ammo { font-weight: 400; color: #c8ccd4; font-size: 12px; }
   #speedo { position: absolute; right: 14px; bottom: 34px; text-align: right; }
-  #speed { font-size: 56px; font-weight: 800; line-height: 0.95; }
+  #speed { font-size: 44px; font-weight: 800; line-height: 0.95; }
   #speed small { font-size: 14px; font-weight: 600; }
   #vehName { font-size: 14px; font-weight: 800; }
   #vehCond { font-size: 12px; color: #ffc93c; font-weight: 700; }
   #radio { position: absolute; right: 12px; bottom: 12px; font-size: 12px; color: #dfe3ea; background: rgba(8,10,16,0.7); padding: 3px 8px; border-radius: 5px; }
-  #stealPrompt { position: absolute; left: 50%; top: 38%; transform: translate(-50%, -50%); text-align: center; background: rgba(8,10,16,0.88); border: 2px solid #ffc93c; border-radius: 10px; padding: 14px 26px; display: none; }
-  #stealPrompt .big { font-size: 26px; font-weight: 800; letter-spacing: 1px; }
+  #stealPrompt { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); text-align: center; background: rgba(8,10,16,0.88); border: 2px solid #ffc93c; border-radius: 10px; padding: 8px 16px; display: none; }
+  #stealPrompt .big { font-size: 16px; font-weight: 800; letter-spacing: 1px; }
   #stealPrompt .small { font-size: 13px; color: #c8ccd4; margin-top: 4px; }
   #crosshair { position: absolute; left: 50%; top: 50%; width: 18px; height: 18px; margin: -9px 0 0 -9px; display: none; }
   #crosshair:before, #crosshair:after { content: ""; position: absolute; background: #fff; }
@@ -100,7 +105,6 @@
     <div class="obj" id="missionObj">Ram the VCPD roadblock, then lose the cops</div>
     <div class="sub" id="missionSub">STORY 5 / 8 · REP 4 · 68%</div>
     <div class="next" id="missionNext">NEXT ▸ The Floodgate Job — $6,000</div>
-    <div class="keys">[WASD] drive &nbsp;[SPACE] handbrake &nbsp;[F] exit &nbsp;[M] map &nbsp;[Q] radio</div>
   </div>
   <div id="vcpd" class="panel">
     <h2>VCPD RESPONSE <span class="tag" id="vcpdTag">IN SIGHT</span></h2>
