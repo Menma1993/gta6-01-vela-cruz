@@ -71,7 +71,7 @@ function makeCarGlowTexture() {
   return carGlowTex;
 }
 
-const TRAFFIC_COLORS = [0xc9a227, 0x7e8ba0, 0x4a6b8a, 0x8a4a4a, 0x5a7d4a, 0xd8d8d8, 0x3a3a3a, 0xb98a68];
+const TRAFFIC_COLORS = [0xF2F2F2, 0xFFC94D, 0x7FB5D5, 0xE87A90, 0xC9A227, 0x5FA8A0, 0xD8D8D8, 0xF27D6B];
 
 export function createTraffic(scene, seed = 11) {
   let s = seed | 0;

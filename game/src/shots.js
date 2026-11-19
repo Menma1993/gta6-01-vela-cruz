@@ -84,13 +84,12 @@ export function stageShot(name, G) {
     // along the water — the river fills the foreground and works (boats,
     // glint, bridge crossing it), downtown + sunset behind. The v3 high
     // aerial sold a low-poly demo; the river port has to be IN the frame.
-    // v4.3: golden hour (17.0) made the water amber-brown — same colour as
-    // the walls and ground, so the river didn't read as water at all.
-    // Late morning (10.5) instead: pale-blue sky, the river runs BLUE
-    // against the tan canyon, and the sheet keeps four distinct times
-    // (morning / golden chase / neon night / blue dawn).
-    Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 10.5, complete: 68 });
-    G.city.setHour(10.5);
+    // v7: golden hour (17.6) now — the sky palettes were fixed to
+    // purple-pink-orange, so the river stays blue-teal against the sunset
+    // instead of going amber-brown. The sheet now has four distinct times
+    // (golden wide / golden chase / neon night / blue dawn).
+    Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.6, complete: 68 });
+    G.city.setHour(17.6);
     G.renderer.setExposure(1.12);
     G.player.setMode('car', 0, 8, Math.PI);
     G.player.drive(0, 0, 0, false, G.city.colliders);
@@ -173,25 +172,28 @@ export function stageShot(name, G) {
     // and hid the boat, the pursuit boats and the heli.
     cam = [-56, 8, 2, 25, 1, -2];
   } else {
-    // cover — 5-star bridge chase at golden hour, low chase camera.
-    Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.8, complete: 68 });
-    G.city.setHour(17.8);
+    // cover v7 — 5-star chase on the Palm Boulevard beachfront, not the bridge:
+    // golden hour 18:00, low rear-left 3/4 chase cam with the hero car big in
+    // frame, wet asphalt running to the low sun, heli + searchlight overhead,
+    // lit traffic ahead and pedestrians on the sand-side sidewalks. No centre toast.
+    Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 18.0, complete: 68 });
+    G.city.setHour(18.0);
     G.renderer.setExposure(1.05);
-    G.player.setMode('car', 0, 18, Math.PI);
+    G.player.setMode('car', 0, 100, Math.PI);
     G.player.speed = 42.8; // 154 km/h
     G.player.drive(0, 0, 0, false, G.city.colliders);
     G.wanted.setWanted(5);
     G.wanted.setHeli(16, 11, -8);
     baseUi(G, save);
-    G.ui.location = 'VELA CRUZ BRIDGE · Old Crossing';
+    G.ui.location = 'PALM BOULEVARD · Vela Cruz';
     G.ui.dialogue = { ...CHARACTERS.mara, line: 'Lose that helicopter before you bring the money to my garage!' };
     G.ui.stolen = true;
-    G.ui.bridgeLift = '0:12';
     G.city.setWet(true);
-    stageTrafficNear(G, [[0, -58], [1, -75]], [[0, -11, -30], [1, 11, -48], [2, -11, -62]]);
-    G.hud.toast('DRIFT ×3  ·  +$150 NEAR MISS', 2500);
-    // v5: ~8.7 m behind, slightly lower — bigger hero car, heli still in frame.
-    cam = [1.5, 2.7, 26.7, 0, 2.2, -30];
+    G.traffic.setNight(true);
+    stageTrafficNear(G, [[0, 62], [1, 78], [8, 42], [9, 90]], [[0, -11, 82], [1, 11, 66], [2, -11, 56], [3, 11, 92]]);
+    // v7: 7.8 m behind, 3.8 m to the left, 2.4 m up — hero car fills the frame,
+    // road and sun vanish up the avenue, heli + beam still in shot.
+    cam = [-3.8, 2.4, 107.8, 0.5, 2.0, 60];
   }
   syncHud(G, lookH, back);
   if (cam) G.renderer.setCam(...cam);

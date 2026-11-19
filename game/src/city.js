@@ -39,8 +39,8 @@ function labelSprite(text, color = '#ffd34d', size = 44) {
 export function skyFor(hour) {
   if (hour >= 6 && hour < 7.5) return { sky: 0x7d9ab5, fog: 0xc3ccd2, sun: 0xffd9a0, amb: 0.62, sunY: 14, sunI: 1.1, fill: 0.6, fogD: 0.0045 };
   if (hour >= 7.5 && hour < 16) return { sky: 0x9fc3d8, fog: 0xc4d2d6, sun: 0xfff2cf, amb: 0.85, sunY: 85, sunI: 1.6, fill: 0.9, fogD: 0.0022 };
-  if (hour >= 16 && hour < 18.5) return { sky: 0xb08a62, fog: 0xcf9a72, sun: 0xff9d4d, amb: 0.52, sunY: 16, sunI: 2.4, fill: 1.0, fogD: 0.0028 };
-  if (hour >= 18.5 && hour < 20) return { sky: 0x8a5a52, fog: 0xb0705e, sun: 0xff8a50, amb: 0.45, sunY: 9, sunI: 1.4, fill: 0.7, fogD: 0.0030 };
+  if (hour >= 16 && hour < 18.5) return { sky: 0xc65d8a, fog: 0xe08a55, sun: 0xff9a3e, amb: 0.55, sunY: 16, sunI: 2.6, fill: 1.1, fogD: 0.0026 }; // golden hour: pink dome mid, warm orange sun + pink-orange haze
+  if (hour >= 18.5 && hour < 20) return { sky: 0x8a4a72, fog: 0x7a4a55, sun: 0xff7a45, amb: 0.48, sunY: 9, sunI: 1.5, fill: 0.8, fogD: 0.0028 };
   return { sky: 0x0d1730, fog: 0x0d1730, sun: 0x8fa3ff, amb: 0.35, sunY: -20, sunI: 0.5, fill: 0.3, fogD: 0.0035 };
 }
 
@@ -216,6 +216,80 @@ export function createCity(seed = 7) {
   walk(3, 400, -9.5, 0); walk(3, 400, 9.5, 0);
   walk(400, 3, 0, -68.5); walk(400, 3, 0, -51.5);
   walk(400, 3, 0, 51.5); walk(400, 3, 0, 68.5);
+
+  // F2 — beachfront boulevard, south of river
+  {
+    const sandGeo = new THREE.PlaneGeometry(23, 122);
+    const sandMat = new THREE.MeshStandardMaterial({ color: 0xE8D8B0, roughness: 1 });
+    const sand = new THREE.Mesh(sandGeo, sandMat);
+    sand.rotation.x = -Math.PI / 2;
+    sand.position.set(-22.5, 0.065, 111);
+    sand.receiveShadow = true;
+    scene.add(sand);
+  }
+
+  {
+    const blvdZ = [40, 70, 100, 130, 160];
+    const blvdH = [12, 15, 10, 18, 13];
+    const blvdColor = [0xF59E4C, 0xF27D6B, 0xFFC94D, 0xE87A90, 0xF2D8A7];
+    const windowMat = new THREE.MeshStandardMaterial({ color: 0x2c3a55, roughness: 0.4, metalness: 0.3, emissive: 0xffffff, emissiveMap: windowAtlas(), emissiveIntensity: 0.9 });
+    for (let i = 0; i < blvdZ.length; i++) {
+      const z = blvdZ[i], h = blvdH[i];
+      const bldg = box(8, h, 16, blvdColor[i], 21, h / 2, z);
+      bldg.castShadow = true;
+      bldg.receiveShadow = true;
+      scene.add(bldg);
+      colliders.push({ x0: 17, z0: z - 8, x1: 25, z1: z + 8 });
+
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(6.5, h * 0.55), windowMat);
+      win.position.set(16.85, h * 0.55, z);
+      win.rotation.y = -Math.PI / 2;
+      scene.add(win);
+
+      const awning = box(5, 0.25, 2.2, 0x2FA36B, 17.6, 3.4, z);
+      awning.rotation.z = 0.12;
+      scene.add(awning);
+
+      if (z === 70 || z === 130) {
+        const col = z === 70 ? 0xff2e88 : 0x00e5ff;
+        const sign = box(0.6, 7, 1.4, col, 16.6, 8, z);
+        sign.material.emissive = new THREE.Color(col);
+        sign.material.emissiveIntensity = 2.0;
+        scene.add(sign);
+        const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: col, opacity: 0.5, transparent: true }));
+        glow.scale.set(6, 4, 1);
+        glow.position.set(16.6, 8, z);
+        scene.add(glow);
+      }
+    }
+  }
+
+  {
+    const palmZ = [36, 50, 64, 78, 92, 106, 120, 134, 148, 162];
+    const trunkGeo = new THREE.CylinderGeometry(0.18, 0.32, 7, 6);
+    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x8a6a4a, roughness: 1 });
+    const frondGeo = new THREE.BoxGeometry(3.4, 0.08, 1.0);
+    frondGeo.translate(1.7, 0, 0);
+    const frondMatA = new THREE.MeshStandardMaterial({ color: 0x2FA36B, roughness: 1 });
+    const frondMatB = new THREE.MeshStandardMaterial({ color: 0x3a8a4a, roughness: 1 });
+    for (const x of [-11.5, 11.5]) {
+      for (const z of palmZ) {
+        const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+        trunk.position.set(x, 3.5, z);
+        trunk.rotation.z = (x < 0 ? 1 : -1) * 0.06;
+        trunk.castShadow = true;
+        scene.add(trunk);
+        for (let i = 0; i < 6; i++) {
+          const frond = new THREE.Mesh(frondGeo, i % 2 === 0 ? frondMatA : frondMatB);
+          frond.position.set(x, 7, z);
+          frond.rotation.y = i * Math.PI / 3;
+          frond.rotation.z = -0.45;
+          frond.castShadow = false;
+          scene.add(frond);
+        }
+      }
+    }
+  }
   // v3: all road paint in ONE InstancedMesh — avenue centre dashes, edge
   // lines, and zebra crosswalks at the three avenue intersections. Paint is
   // what makes a road read as a road at street level (cover + night shots).
@@ -298,6 +372,7 @@ export function createCity(seed = 7) {
     // the old filter only excluded the bridge rectangle, so blocks could
     // spawn IN the river (one blocked the boat camera).
     if (Math.abs(x) < 12 || Math.abs(z + 60) < 11 || Math.abs(z - 60) < 11 || Math.abs(z - 140) < 11) continue; // roads
+    if (Math.abs(x) > 13 && Math.abs(x) < 34 && z > 28 && z < 172) continue; // v7 boulevard strips (east buildings + west sand promenade)
     if (Math.abs(x + 90) < 11 || Math.abs(x - 90) < 11) continue;
     if (x > 55 && z > -5 && z < 125) continue; // mesa footprint
     if (spots.some((p) => Math.hypot(p.x - x, p.z - z) < 26)) continue;

@@ -6,9 +6,9 @@ import { PLAYER, CAR, BOAT } from './config.js';
 
 function buildCarMesh(color) {
   const g = new THREE.Group();
-  // v4: glossier hero paint + hubcaps, matching the traffic-car upgrade —
-  // the chase camera lives on this car, so its paint is the game's paint.
-  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.8, CAR.length), new THREE.MeshPhysicalMaterial({ color, roughness: 0.3, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.12, envMapIntensity: 0.6 }));
+  // F3: hero car. Deep clearcoat paint that actually picks up the PMREM sunset
+  // env, headlights and tail bar glowing against golden hour, wide wing on struts.
+  const body = new THREE.Mesh(new THREE.BoxGeometry(CAR.width, 0.8, CAR.length), new THREE.MeshPhysicalMaterial({ color, roughness: 0.18, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.08, envMapIntensity: 1.2 }));
   body.position.y = 0.7; g.add(body);
   const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.7, 2.0), new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.08, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.05, envMapIntensity: 0.5 }));
   cabin.position.set(0, 1.4, -0.3); g.add(cabin);
@@ -24,8 +24,14 @@ function buildCarMesh(color) {
     const mirror = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.14, 0.12), mirrorMat);
     mirror.position.set(x * 1.0, 1.35, 0.75); g.add(mirror);
   }
-  const spoiler = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: 0x141414 }));
-  spoiler.position.set(0, 1.25, -2.1); g.add(spoiler);
+  // Wide rear wing on two small struts.
+  const spoilerMat = new THREE.MeshStandardMaterial({ color: 0x141414 });
+  const spoiler = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.1, 0.55), spoilerMat);
+  spoiler.position.set(0, 1.32, -2.1); g.add(spoiler);
+  for (const x of [-0.7, 0.7]) {
+    const strut = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.22, 0.12), spoilerMat);
+    strut.position.set(x, 1.18, -2.1); g.add(strut);
+  }
   const wheelGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.32, 10);
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0d0d0d });
   const hubGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.34, 8);
@@ -36,14 +42,33 @@ function buildCarMesh(color) {
     const hub = new THREE.Mesh(hubGeo, hubMat);
     hub.rotation.z = Math.PI / 2; hub.position.set(x, 0.45, z); g.add(hub);
   }
-  const lightMat = new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffe9a0, emissiveIntensity: 1.2 });
+  // Radial-gradient glow texture, built locally and shared by every glow sprite.
+  const glowCanvas = document.createElement('canvas');
+  glowCanvas.width = 64; glowCanvas.height = 64;
+  const glowCtx = glowCanvas.getContext('2d');
+  const glowGrad = glowCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  glowGrad.addColorStop(0.0, 'rgba(255, 255, 255, 1.0)');
+  glowGrad.addColorStop(0.35, 'rgba(255, 255, 255, 0.55)');
+  glowGrad.addColorStop(1.0, 'rgba(255, 255, 255, 0.0)');
+  glowCtx.fillStyle = glowGrad;
+  glowCtx.fillRect(0, 0, 64, 64);
+  const glowTex = new THREE.CanvasTexture(glowCanvas);
+  // Headlights: two lens boxes with a glow sprite sitting just in front of each.
+  const lightMat = new THREE.MeshStandardMaterial({ color: 0xfff2cf, emissive: 0xffe9a0, emissiveIntensity: 2.2 });
+  const headGlowMat = new THREE.SpriteMaterial({ map: glowTex, color: 0xffe9a0, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
   for (const x of [-0.7, 0.7]) {
     const l = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.1), lightMat);
     l.position.set(x, 0.75, 2.31); g.add(l);
+    const headGlow = new THREE.Sprite(headGlowMat);
+    headGlow.position.set(x, 0.75, 2.45);
+    headGlow.scale.set(1.8, 1.8, 1); g.add(headGlow);
   }
   // Red rear light bar — the chase camera mostly sees the back of the car.
-  const tail = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 0.1), new THREE.MeshPhysicalMaterial({ color: 0xaa1111, roughness: 0.15, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.06, emissive: 0xff2222, emissiveIntensity: 0.8, envMapIntensity: 1.0 }));
+  const tail = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.22, 0.1), new THREE.MeshPhysicalMaterial({ color: 0xaa1111, roughness: 0.15, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.06, emissive: 0xff2222, emissiveIntensity: 1.6, envMapIntensity: 1.0 }));
   tail.position.set(0, 0.85, -2.31); g.add(tail);
+  const tailGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff2233, transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }));
+  tailGlow.position.set(0, 0.85, -2.45);
+  tailGlow.scale.set(2.6, 1.3, 1); g.add(tailGlow);
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; }); // v3: real shadows
   return g;
 }
@@ -151,7 +176,7 @@ export function createParkedCars(scene) {
 }
 
 export function createPlayer(scene) {
-  const carMesh = buildCarMesh(0xd92b2b);
+  const carMesh = buildCarMesh(0xE8442E);
   const figureMesh = buildFigureMesh();
   const boatMesh = buildBoatMesh();
   scene.add(carMesh); scene.add(figureMesh); scene.add(boatMesh);

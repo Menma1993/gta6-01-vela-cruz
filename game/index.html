@@ -11,9 +11,9 @@
   #hud { position: fixed; inset: 0; pointer-events: none; color: #eef1f5; font-size: 14px; }
   /* Vignette + warm-top grade: one-pass look shared by every frame. */
   #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse at center, transparent 56%, rgba(5,8,14,0.42) 100%); }
-  .panel { background: rgba(8, 10, 16, 0.78); border: 1px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(2px); }
+  .panel { background: rgba(20, 20, 40, 0.92); border: 1px solid rgba(255, 176, 32, 0.35); border-radius: 8px; padding: 10px 12px; backdrop-filter: blur(2px); }
   #mission { position: absolute; top: 12px; left: 12px; width: 330px; }
-  #mission h1 { margin: 0 0 4px; font-size: 16px; color: #ffc93c; letter-spacing: 0.4px; }
+  #mission h1 { margin: 0 0 4px; font-size: 17px; color: #FFB020; letter-spacing: 0.4px; }
   #mission .obj { font-size: 14px; line-height: 1.35; }
   #mission .sub { color: #7ee787; font-size: 13px; margin-top: 4px; }
   #mission .next { color: #ffc93c; font-size: 13px; margin-top: 2px; }
@@ -30,10 +30,10 @@
   .badge.warn { background: #ffc93c; color: #201600; border-color: #ffc93c; }
   .badge.blue { background: #1f6feb; color: #fff; border-color: #1f6feb; }
   #wanted { position: absolute; top: 12px; right: 12px; width: 260px; text-align: right; }
-  #wanted .wline { color: #ff6b6b; font-weight: 800; font-size: 13px; letter-spacing: 1px; }
-  #stars { font-size: 22px; letter-spacing: 3px; color: #ffc93c; line-height: 1.2; }
+  #wanted .wline { color: #FFB020; font-weight: 800; font-size: 15px; letter-spacing: 1px; }
+  #stars { font-size: 24px; letter-spacing: 3px; color: #FFC531; line-height: 1.2; }
   #stars .off { color: #4a4f5a; }
-  #cash { font-size: 30px; font-weight: 800; color: #4ade80; line-height: 1.1; }
+  #cash { font-size: 34px; font-weight: 800; color: #2FD673; line-height: 1.1; }
   #clock { font-size: 13px; color: #dfe3ea; }
   .bar-row { margin-top: 8px; text-align: left; font-size: 11px; letter-spacing: 1px; color: #c8ccd4; }
   .bar { height: 8px; background: #2a2f3a; border-radius: 4px; overflow: hidden; margin-top: 2px; }
@@ -42,18 +42,18 @@
   #armourBar { background: #3b82f6; width: 64%; }
   #repBar { background: #ffc93c; width: 68%; }
   #minimapWrap { position: absolute; left: 12px; bottom: 44px; }
-  #minimap { width: 190px; height: 190px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.75); box-shadow: 0 0 0 3px rgba(0,0,0,0.55); display: block; background: #0d1a12; }
+  #minimap { width: 190px; height: 190px; border-radius: 50%; border: 3px solid #FFB020; box-shadow: 0 0 0 3px rgba(20,20,40,0.8); display: block; background: #E8DCC0; }
   #locCard { position: absolute; left: 12px; bottom: 12px; font-size: 12px; font-weight: 700; background: rgba(8,10,16,0.82); padding: 4px 10px; border-radius: 5px; }
   #dialogue { position: absolute; left: 50%; transform: translateX(-50%); bottom: 14px; width: 520px; display: flex; gap: 10px; align-items: center; }
-  #portrait { width: 52px; height: 52px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 26px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 3px solid #ffc93c; flex: none; }
-  #dialogue .who { color: #ffc93c; font-weight: 800; font-size: 14px; }
+  #portrait { width: 52px; height: 52px; border-radius: 50%; background: #b3261e; color: #fff; font-size: 26px; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 3px solid #FFB020; flex: none; overflow: hidden; padding: 0; }
+  #dialogue .who { color: #FFB020; font-weight: 800; font-size: 15px; }
   #dialogue .line { font-size: 14px; line-height: 1.3; }
   #weapons { position: absolute; right: 12px; bottom: 96px; display: flex; gap: 6px; }
   .wslot { width: 76px; background: rgba(8,10,16,0.8); border: 1px solid rgba(255,255,255,0.18); border-radius: 6px; padding: 6px 4px; text-align: center; font-size: 11px; font-weight: 700; }
-  .wslot.sel { border-color: #ffc93c; box-shadow: 0 0 0 1px #ffc93c; }
+  .wslot.sel { border-color: #FFB020; box-shadow: 0 0 0 1px #FFB020; }
   .wslot .ammo { font-weight: 400; color: #c8ccd4; font-size: 12px; }
   #speedo { position: absolute; right: 14px; bottom: 34px; text-align: right; }
-  #speed { font-size: 40px; font-weight: 800; line-height: 0.95; }
+  #speed { font-size: 56px; font-weight: 800; line-height: 0.95; }
   #speed small { font-size: 14px; font-weight: 600; }
   #vehName { font-size: 14px; font-weight: 800; }
   #vehCond { font-size: 12px; color: #ffc93c; font-weight: 700; }

@@ -14,17 +14,17 @@ export function createMinimap(canvas) {
     draw(state) {
       ctx.clearRect(0, 0, W, H);
       // Land + districts.
-      ctx.fillStyle = '#123524'; ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#1d4a2e';
+      ctx.fillStyle = '#E8DCC0'; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#D8C9A8';
       ctx.fillRect(toX(-150), toY(-105), 108, 81); // Old Crossing
       ctx.fillRect(toX(30), toY(-98), 99, 77); // Canal Row
-      ctx.fillStyle = '#6b4a2f';
+      ctx.fillStyle = '#C9B18A';
       ctx.fillRect(toX(60), toY(-10), 135, 117); // Mesa Verde
-      ctx.fillStyle = '#1d4a2e';
+      ctx.fillStyle = '#D8C9A8';
       ctx.fillRect(toX(-125), toY(75), 117, 81); // Port Vela
       ctx.fillRect(toX(-165), toY(10), 99, 81); // Neon Mile
       // District names — so the minimap reads as a map, not green blobs.
-      ctx.fillStyle = 'rgba(232,226,208,0.9)';
+      ctx.fillStyle = 'rgba(90,70,40,0.95)';
       ctx.font = 'bold 9px system-ui, sans-serif'; ctx.textAlign = 'center';
       ctx.fillText('OLD CROSSING', toX(-96), toY(-64));
       ctx.fillText('CANAL ROW', toX(80), toY(-60));
@@ -32,33 +32,33 @@ export function createMinimap(canvas) {
       ctx.fillText('PORT VELA', toX(-66), toY(115));
       ctx.fillText('NEON MILE', toX(-115), toY(50));
       // River (east-west band) + bridge deck.
-      ctx.fillStyle = '#2e7d9e';
+      ctx.fillStyle = '#A8D8E8';
       ctx.fillRect(0, toY(-16), W, toY(16) - toY(-16));
-      ctx.fillStyle = '#3a3b40';
+      ctx.fillStyle = '#8A8A8A';
       ctx.fillRect(toX(-8), 0, toX(8) - toX(-8), H);
       // Roads.
-      ctx.strokeStyle = '#3a3b40'; ctx.lineWidth = 5;
+      ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 5;
       ctx.beginPath(); ctx.moveTo(0, toY(-60)); ctx.lineTo(W, toY(-60)); ctx.moveTo(0, toY(60)); ctx.lineTo(W, toY(60)); ctx.stroke();
       // Sun Shells.
-      ctx.fillStyle = '#ffd34d';
+      ctx.fillStyle = '#F5B81D';
       for (const s of state.shells || []) {
         if (s.taken) continue;
         ctx.beginPath(); ctx.arc(toX(s.x), toY(s.z), 2, 0, Math.PI * 2); ctx.fill();
       }
       // Active job marker.
       if (state.jobMarker) {
-        ctx.fillStyle = '#ffd34d';
+        ctx.fillStyle = '#E8442E';
         const jx = toX(state.jobMarker.x), jy = toY(state.jobMarker.z);
         ctx.beginPath(); ctx.moveTo(jx, jy - 6); ctx.lineTo(jx + 6, jy); ctx.lineTo(jx, jy + 6); ctx.lineTo(jx - 6, jy); ctx.closePath(); ctx.fill();
       }
       // VCPD units.
-      ctx.fillStyle = '#ff4040';
+      ctx.fillStyle = '#E5484D';
       for (const u of state.police || []) {
         ctx.beginPath(); ctx.arc(toX(u.x), toY(u.z), 3.5, 0, Math.PI * 2); ctx.fill();
       }
       // Helicopter.
       if (state.heli) {
-        ctx.fillStyle = '#ff9040';
+        ctx.fillStyle = '#FF7A1E';
         ctx.beginPath(); ctx.arc(toX(state.heli.x), toY(state.heli.z), 3, 0, Math.PI * 2); ctx.fill();
       }
       // Player arrow, rotated by heading: canvas up is -Z, heading 0 drives +Z.
@@ -66,11 +66,11 @@ export function createMinimap(canvas) {
       ctx.save();
       ctx.translate(px, py);
       ctx.rotate(Math.PI - state.player.heading);
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = '#141428';
       ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(5, 6); ctx.lineTo(0, 3); ctx.lineTo(-5, 6); ctx.closePath(); ctx.fill();
       ctx.restore();
       // North marker.
-      ctx.fillStyle = '#9ecbff';
+      ctx.fillStyle = '#141428';
       ctx.font = 'bold 12px system-ui, sans-serif'; ctx.textAlign = 'center';
       ctx.fillText('N', W / 2, 14);
     },

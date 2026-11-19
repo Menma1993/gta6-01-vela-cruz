@@ -202,8 +202,8 @@ export function createSky(scene) {
   const PALETTES = [
     { lo: 5.5,  hi: 7.5,  top: 0x1b3a66, mid: 0x4a6a93, horizon: 0xd79a6a, sun: 0xffcf9a, sunI: 0.65, sunY: 0.12, fog: 0x6a7a92, halo: 0xffb877, glow: 0x241a30, night: 0.35, haze: 1.0,  disc: 1.1 }, // dawn blue hour, warm band
     { lo: 7.5,  hi: 16.0, top: 0x2e6cb4, mid: 0x92bedd, horizon: 0xe4dcc0, sun: 0xfff6e0, sunI: 1.0,  sunY: 0.55, fog: 0xcfd8dc, halo: 0xffe6bd, glow: 0x000000, night: 0.0, haze: 0.85, disc: 1.0 }, // day
-    { lo: 16.0, hi: 18.5, top: 0x3a5a86, mid: 0xcf8a4a, horizon: 0xff9a3c, sun: 0xffb24a, sunI: 1.1,  sunY: 0.18, fog: 0xd98a4a, halo: 0xff7a1e, glow: 0x000000, night: 0.0,  haze: 1.0,  disc: 1.3 }, // golden, saturated amber
-    { lo: 18.5, hi: 20.0, top: 0x1e2d55, mid: 0x7a4a7a, horizon: 0xe06a4a, sun: 0xff8a5a, sunI: 0.75, sunY: 0.05, fog: 0x6a4a5a, halo: 0xff6a3a, glow: 0x2a1830, night: 0.45, haze: 1.0,  disc: 1.2 }, // dusk
+    { lo: 16.0, hi: 18.5, top: 0x4a2b6b, mid: 0xc65d8a, horizon: 0xf59a3e, sun: 0xfff3c4, sunI: 1.35, sunY: 0.07, fog: 0xe08a55, halo: 0xff9a5c, glow: 0x000000, night: 0.0,  haze: 1.0,  disc: 1.7 }, // golden hour, Vice-style purple-to-orange sunset gradient, big low sun
+    { lo: 18.5, hi: 20.0, top: 0x2a1b4a, mid: 0x8a4a72, horizon: 0xe86a3c, sun: 0xff9a5a, sunI: 0.8,  sunY: 0.03, fog: 0x7a4a55, halo: 0xff6a3a, glow: 0x2a1830, night: 0.45, haze: 1.0,  disc: 1.4 }, // dusk, violet sky, ember horizon, sun on the deck
     { lo: 20.0, hi: 24.0, top: 0x060a1a, mid: 0x0c1430, horizon: 0x1a2a4a, sun: 0xbfcfe0, sunI: 0.4,  sunY: 0.45, fog: 0x10182e, halo: 0x5a7aa0, glow: 0x3a2e3a, night: 1.0,  haze: 0.7,  disc: 1.0 }, // night, city-glow horizon
     { lo: 0.0,  hi: 5.5,  top: 0x060a1a, mid: 0x0c1430, horizon: 0x1a2a4a, sun: 0xbfcfe0, sunI: 0.4,  sunY: 0.45, fog: 0x10182e, halo: 0x5a7aa0, glow: 0x3a2e3a, night: 1.0,  haze: 0.7,  disc: 1.0 }, // night
   ];
