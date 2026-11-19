@@ -192,9 +192,20 @@ function buildPoliceBoatMesh() {
   g.add(bow);
   const stripe = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.22, BOAT.length), new THREE.MeshStandardMaterial({ color: 0x1a4fd6 }));
   stripe.position.y = 0.8; g.add(stripe);
+  // r4d: dark waterline at the hull base + a dark deck inset — the white hull
+  // stops reading as one flat barge slab from the high boat camera.
+  const waterline = new THREE.Mesh(new THREE.BoxGeometry(2.44, 0.16, BOAT.length), new THREE.MeshStandardMaterial({ color: 0x14202e, roughness: 0.5 }));
+  waterline.position.y = 0.18; g.add(waterline);
+  const deckInset = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.06, 4.6), new THREE.MeshStandardMaterial({ color: 0x2a2f36, roughness: 0.6 }));
+  deckInset.position.y = 1.06; g.add(deckInset);
   const cab = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.8, 2.2), new THREE.MeshStandardMaterial({ color: 0x18202e, roughness: 0.3, metalness: 0.5 }));
   cab.position.set(0, 1.4, 0.4); g.add(cab);
-  const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff2233, emissiveIntensity: 2 }));
+  // r4d: dark glass on both cab flanks so the cab reads as a wheelhouse, not a box.
+  for (const sx of [-1, 1]) {
+    const cabGlass = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.5, 1.6), new THREE.MeshPhysicalMaterial({ color: 0x0a0e14, roughness: 0.08, metalness: 0.0, clearcoat: 1.0 }));
+    cabGlass.position.set(sx * 0.92, 1.45, 0.4); g.add(cabGlass);
+  }
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff2233, emissiveIntensity: 3 }));
   bar.position.set(0, 1.95, 0.4); g.add(bar);
   const motor = new THREE.Mesh(new THREE.BoxGeometry(0.7, 1.1, 0.6), new THREE.MeshStandardMaterial({ color: 0x141414 }));
   motor.position.set(0, 0.9, -3.3); g.add(motor);

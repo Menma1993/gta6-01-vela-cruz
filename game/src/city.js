@@ -87,6 +87,7 @@ export function createCity(seed = 7) {
   scene.add(playerLight);
   let sunYeff = 26;
   let sunOverride = null; // normalized THREE.Vector3 or null: staged-shot sun direction
+  let fillOverride = null; // number or null: staged-shot fill intensity, re-applied by setHour like sunOverride
   let lastWaterSky = 0x6fa8c0, lastSunHex = 0xff9a3e; // remembered by setHour for the override re-apply
   // Re-point sky dome sun, water glint at the override direction.
   // Called from setHour (if override already set) and from setSunOverride.
@@ -223,7 +224,7 @@ export function createCity(seed = 7) {
       // face (they must read at 100-270 m at a grazing angle) + one big
       // wall-top sign per segment. Face toward the river is at
       // z = wz - sign(wz)*5; panels sit 0.3 m proud of it.
-      const panelColors = [0xc96a2e, 0x2e7d6b, 0xb98a2e, 0x8a4a4a];
+      const panelColors = [0xc96a2e, 0x5f7a68, 0xb98a2e, 0x8a4a4a]; // r4d: teal muted to sage — the saturated teal read as a flat green slab at golden hour
       let pi = 0;
       for (let bx = x0 + 25; bx < x1 - 15; bx += 50) {
         const panel = new THREE.Mesh(
@@ -239,6 +240,21 @@ export function createCity(seed = 7) {
         );
         panelTrim.position.set(bx, 5.9, wz - Math.sign(wz) * 5.3);
         scene.add(panelTrim);
+        // r4d: bottom trim + two vertical ribs — the panel stops reading as one flat colour card.
+        const panelTrimB = new THREE.Mesh(
+          new THREE.BoxGeometry(11.4, 0.35, 0.45),
+          new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 })
+        );
+        panelTrimB.position.set(bx, 0.9, wz - Math.sign(wz) * 5.3);
+        scene.add(panelTrimB);
+        for (const rx of [-3.6, 3.6]) {
+          const rib = new THREE.Mesh(
+            new THREE.BoxGeometry(0.3, 4.6, 0.45),
+            new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.9 })
+          );
+          rib.position.set(bx + rx, 3.4, wz - Math.sign(wz) * 5.3);
+          scene.add(rib);
+        }
         pi++;
       }
       // Wall-top sign: dark backing + camera-facing label + glow, one per
@@ -246,7 +262,10 @@ export function createCity(seed = 7) {
       const wallSignTexts = ['PORT VELA', 'CANAL ROW', 'OLD CROSSING', 'MESA VERDE'];
       const wallSignIdx = (wz < 0 ? 0 : 2) + (x0 < 0 ? 0 : 1);
       const wsx = (x0 + x1) / 2;
-      const wsBack = box(0.6, 5.5, 18, 0x1a1a1a, wsx, 9.4, wz);
+      const wsBack = box(0.6, 5.5, 10, 0x1a1a1a, wsx, 9.4, wz);
+      // r4d-9: depth 18 (proof) menjorok ke z=35 dan menutupi huruf E sign
+      // CLUB VOLTAGE dari kamera night; depth 10 = selebar dinding (z 21..31),
+      // sinar E (z=34.3 di x=-110) lolos 3+ m.
       scene.add(wsBack);
       const wsLabel = labelSprite(wallSignTexts[wallSignIdx], '#ffd34d', 64);
       wsLabel.scale.set(16, 3.4, 1);
@@ -709,6 +728,16 @@ export function createCity(seed = 7) {
   spire.position.set(-52, 52 + 7, -58); scene.add(spire);
   const spireBeacon = new THREE.Mesh(new THREE.SphereGeometry(0.6, 8, 8), new THREE.MeshStandardMaterial({ color: 0xff2020, emissive: 0xff2020, emissiveIntensity: 3 }));
   spireBeacon.position.set(-52, 52 + 14.4, -58); scene.add(spireBeacon);
+  // r4d: far-north towers — the night shot's upper-right was empty black sky,
+  // and the wide frame's right horizon was flat. Lit south faces, so they
+  // read from the club street and from the wide camera alike.
+  for (const [tx, tz, th] of [[-120, -215, 55], [-80, -225, 45], [-40, -215, 60]]) {
+    const far = new THREE.Mesh(new THREE.BoxGeometry(13, th, 13), new THREE.MeshStandardMaterial({ color: 0x3a3a42, roughness: 0.9 }));
+    far.position.set(tx, th / 2, tz); far.castShadow = true; scene.add(far);
+    const farWin = new THREE.Mesh(new THREE.PlaneGeometry(11, th * 0.6), winMat);
+    farWin.position.set(tx, th * 0.55, tz + 6.6);
+    scene.add(farWin);
+  }
 
   // Neon Mile: Club Voltage + neon signs (emissive boxes that glow at night).
   const club = box(26, 12, 16, 0x241a33, -110, 6, 55); scene.add(club);
@@ -721,6 +750,29 @@ export function createCity(seed = 7) {
     const sign = box(8 + (i % 2) * 3, 1.6, 0.6, 0x111111, -118 + i * 4.5, ny, 46.9, { emissive: c, ei: 2.2 });
     scene.add(sign);
   });
+  // r4d: the middle (yellow) neon sign gets a word — it was one flat yellow bar.
+  // r4d-9: plane datar menghadap utara, bukan sprite billboard — sprite
+  // miring mengikuti kamera oblique dan separuh bidang masuk ke box sign
+  // kuning (muka depan z=46.6), sehingga huruf "CAN" tertutup.
+  const cantinaCanvas = document.createElement('canvas');
+  cantinaCanvas.width = 512; cantinaCanvas.height = 96;
+  const cantinaCtx = cantinaCanvas.getContext('2d');
+  cantinaCtx.font = '800 48px system-ui, sans-serif';
+  cantinaCtx.textAlign = 'center'; cantinaCtx.textBaseline = 'middle';
+  cantinaCtx.fillStyle = '#1a1a1a';
+  cantinaCtx.fillText('CANTINA', 256, 48);
+  const cantinaTex = new THREE.CanvasTexture(cantinaCanvas);
+  const cantinaLabel = new THREE.Mesh(
+    new THREE.PlaneGeometry(7, 1.3),
+    new THREE.MeshBasicMaterial({ map: cantinaTex, transparent: true })
+  );
+  cantinaLabel.position.set(-109, 7.5, 46.45);
+  cantinaLabel.rotation.y = Math.PI; // face north, toward the street/camera
+  scene.add(cantinaLabel);
+  const cantinaGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffd400, transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }));
+  cantinaGlow.scale.set(9, 3, 1);
+  cantinaGlow.position.set(-109, 7.5, 46.4); // di depan muka sign (46.6)
+  scene.add(cantinaGlow);
   const clubSign = labelSprite('CLUB VOLTAGE', '#ff2e88', 56);
   clubSign.scale.set(15, 2.8, 1);
   clubSign.position.set(-114, 12.5, 39.5); scene.add(clubSign);
@@ -816,15 +868,15 @@ export function createCity(seed = 7) {
   const clubEastNeon2 = box(0.3, 9, 1.1, 0x00e5ff, -96.9, 6, 60, { emissive: 0x00e5ff, ei: 2.4 });
   scene.add(clubEastNeon2);
   const clubEastGlow = new THREE.Sprite(
-    new THREE.SpriteMaterial({ map: glowTex, color: 0xff2e88, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending })
+    new THREE.SpriteMaterial({ map: glowTex, color: 0xff2e88, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })
   );
-  clubEastGlow.scale.set(3, 9, 1);
+  clubEastGlow.scale.set(4.5, 11, 1);
   clubEastGlow.position.set(-96.6, 6, 50);
   scene.add(clubEastGlow);
   const clubEastGlow2 = new THREE.Sprite(
-    new THREE.SpriteMaterial({ map: glowTex, color: 0x00e5ff, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending })
+    new THREE.SpriteMaterial({ map: glowTex, color: 0x00e5ff, transparent: true, opacity: 0.85, depthWrite: false, blending: THREE.AdditiveBlending })
   );
-  clubEastGlow2.scale.set(4, 10, 1);
+  clubEastGlow2.scale.set(5.5, 12, 1);
   clubEastGlow2.position.set(-96.6, 6, 60);
   scene.add(clubEastGlow2);
   const clubEastLight = new THREE.PointLight(0xff2e88, 0, 26, 1.2);
@@ -1048,15 +1100,16 @@ export function createCity(seed = 7) {
       sun.position.set(-60, sunYeff, -80);
       hemi.intensity = s2.amb;
       fill.intensity = s2.fill;
+      if (fillOverride !== null) fill.intensity = fillOverride;
       // Windows glow after dark / before dawn; the atlas does the rest.
       // v3: brighter (1.7) + the club face joins in, and lamp pools + the
       // player light switch on with the dark.
       const night = (hour >= 19 || hour < 6.5);
-      winMat.emissiveIntensity = night ? 1.7 : 0;
-      clubWinMat.emissiveIntensity = night ? 1.7 : 0;
+      winMat.emissiveIntensity = night ? 2.2 : 0;
+      clubWinMat.emissiveIntensity = night ? 2.2 : 0;
       for (const p of pools) p.material.opacity = night ? 0.32 : (hour >= 17.5 && hour < 19 ? 0.14 : 0);
       // v4: neon spill lights live only after dark (with a faint glow at dusk).
-      for (const n of neonLights) n.light.intensity = night ? n.on : (hour >= 17.5 && hour < 19 ? n.on * 0.35 : 0);
+      for (const n of neonLights) n.light.intensity = night ? n.on * 1.35 : (hour >= 17.5 && hour < 19 ? n.on * 0.35 : 0);
       playerLight.intensity = night ? 4.5 : (hour >= 17.5 && hour < 19 ? 0.7 : 0);
       // Water sky is deliberately DECOUPLED from the fog colour: at golden hour
       // pal.fog is a warm orange, and feeding it to the shader turned the river
@@ -1090,12 +1143,15 @@ export function createCity(seed = 7) {
     /** Staged-shot sun override: re-point sky sun, water glint, light and
      *  fog for ONE shot. dir = direction TOWARD the sun (will be normalized).
      *  fogD optional: denser haze so downtown dissolves into the sunset. */
-    setSunOverride(x, y, z, fogD) {
+    setSunOverride(x, y, z, fogD, fillI) {
       sunOverride = new THREE.Vector3(x, y, z).normalize();
       if (fogD) scene.fog.density = fogD;
+      if (fillI !== undefined) fillOverride = fillI;
       applySunOverride();
     },
-    clearSunOverride() { sunOverride = null; },
+    /** Staged-shot fill boost without moving the sun (cover shot). */
+    setFillI(v) { fillOverride = v; },
+    clearSunOverride() { sunOverride = null; fillOverride = null; },
     /** Park the warm player light over the on-foot figure (night shots). */
     setPlayerLight(x, z) {
       playerLight.position.set(x, 4.5, z);

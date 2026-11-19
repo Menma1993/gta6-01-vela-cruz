@@ -150,6 +150,24 @@ export function createSky(scene) {
         return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
       }
 
+      float hash21(vec2 p) {
+        p = fract(p * vec2(123.34, 456.21));
+        p += dot(p, p + 45.32);
+        return fract(p.x * p.y);
+      }
+      float vnoise(vec2 p) {
+        vec2 i = floor(p), f = fract(p);
+        f = f * f * (3.0 - 2.0 * f);
+        float a = hash21(i), b = hash21(i + vec2(1.0, 0.0));
+        float c = hash21(i + vec2(0.0, 1.0)), e = hash21(i + vec2(1.0, 1.0));
+        return mix(mix(a, b, f.x), mix(c, e, f.x), f.y);
+      }
+      float fbm3(vec2 p) {
+        float v = 0.0, a = 0.5;
+        for (int i = 0; i < 3; i++) { v += a * vnoise(p); p *= 2.13; a *= 0.5; }
+        return v;
+      }
+
       void main() {
         vec3 d = normalize(vDir);
         float h = clamp(d.y, -0.10, 1.0);
@@ -164,6 +182,14 @@ export function createSky(scene) {
         float band = smoothstep(0.30, 0.42, h) * (1.0 - smoothstep(0.55, 0.68, h));
         col = mix(col, vec3(0.98, 0.72, 0.82), band * 0.12 * (1.0 - uNight));
 
+        // Procedural clouds: soft billows in the upper sky, sun-tinted, so the
+        // zenith never reads as an empty gradient. Day/golden only.
+        vec2 cuv = d.xz / max(d.y + 0.22, 0.06);
+        float cn = fbm3(cuv * 0.55 + vec2(3.7, 1.3));
+        float cmask = smoothstep(0.16, 0.30, h) * (1.0 - smoothstep(0.55, 0.72, h));
+        float cov = smoothstep(0.52, 0.72, cn) * cmask * (1.0 - uNight);
+        vec3 cloudCol = mix(uHorizon, uSunColor, 0.45);
+        col = mix(col, cloudCol, cov * 0.38);
         // Horizon haze: same colour as the fog, thickest at the waterline, so
         // distant towers dissolve into the sky instead of cutting a silhouette.
         float haze = pow(1.0 - clamp(h / 0.30, 0.0, 1.0), 2.0);

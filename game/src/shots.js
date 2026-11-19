@@ -90,7 +90,7 @@ export function stageShot(name, G) {
     // (golden wide / golden chase / neon night / blue dawn).
     Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.6, complete: 68 });
     G.city.setHour(17.6);
-    G.city.setSunOverride(-1, 0.14, -0.06, 0.0032); // r4d: sun low in the west, over the river vanishing point
+    G.city.setSunOverride(-1, 0.14, -0.06, 0.0032, 1.7); // r4d: sun low in the west, over the river vanishing point; fill lifts the shadow-side facades
     G.renderer.setExposure(1.24);
     G.player.setMode('car', 0, 8, Math.PI);
     G.player.drive(0, 0, 0, false, G.city.colliders);
@@ -163,6 +163,7 @@ export function stageShot(name, G) {
     // overhead, pursuit boats + helicopter. Police cars stay off the water.
     Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 6.2, complete: 68 });
     G.city.setHour(6.2);
+    G.city.setSunOverride(1, 0.10, -0.05, 0.004, 0.9); // r4d: dawn sun low in the east, over the river ahead — disc + glint lane in frame
     G.renderer.setExposure(1.15);
     G.city.dust.setOn(false);
     G.player.setMode('boat', -30, 0, Math.PI / 2);
@@ -194,6 +195,7 @@ export function stageShot(name, G) {
     // sand promenade left) and the arch is small and hazed at the vanish.
     Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 18.0, complete: 68 });
     G.city.setHour(18.0);
+    G.city.setFillI(1.7); // r4d: lift the shadow-side asphalt foreground + hero car rear
     G.renderer.setExposure(1.22);
     G.player.setMode('car', 0, 150, Math.PI); // z=150, heading north up the boulevard
     G.player.speed = 42.8; // 154 km/h
