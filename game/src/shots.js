@@ -90,6 +90,7 @@ export function stageShot(name, G) {
     // (golden wide / golden chase / neon night / blue dawn).
     Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.6, complete: 68 });
     G.city.setHour(17.6);
+    G.city.setSunOverride(-1, 0.14, -0.06, 0.0032); // r4d: sun low in the west, over the river vanishing point
     G.renderer.setExposure(1.24);
     G.player.setMode('car', 0, 8, Math.PI);
     G.player.drive(0, 0, 0, false, G.city.colliders);

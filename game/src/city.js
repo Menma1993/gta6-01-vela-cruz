@@ -86,6 +86,15 @@ export function createCity(seed = 7) {
   playerLight.position.set(0, 4, 0);
   scene.add(playerLight);
   let sunYeff = 26;
+  let sunOverride = null; // normalized THREE.Vector3 or null: staged-shot sun direction
+  let lastWaterSky = 0x6fa8c0, lastSunHex = 0xff9a3e; // remembered by setHour for the override re-apply
+  // Re-point sky dome sun, water glint at the override direction.
+  // Called from setHour (if override already set) and from setSunOverride.
+  function applySunOverride() {
+    if (!sunOverride) return;
+    sky.uniforms.uSunDir.value.copy(sunOverride);
+    water.setSky(lastWaterSky, sunOverride, lastSunHex);
+  }
   // Warm fill from the south (behind the chase camera) so car rears and
   // building faces toward the camera are lit, not black, at golden hour.
   const fill = new THREE.DirectionalLight(0xffd9a0, 1.0);
@@ -197,15 +206,15 @@ export function createCity(seed = 7) {
         if (pillarCount % 2 === 0) {
           const lamp = new THREE.Mesh(
             new THREE.SphereGeometry(0.3, 8, 8),
-            new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffd9a0, emissiveIntensity: 2 })
+            new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffd9a0, emissiveIntensity: 3 })
           );
           lamp.position.set(px, 7.2, lampZ);
           scene.add(lamp);
 
           const glow = new THREE.Sprite(
-            new THREE.SpriteMaterial({ map: glowTex, color: 0xffd9a0, transparent: true, opacity: 0.5, depthWrite: false })
+            new THREE.SpriteMaterial({ map: glowTex, color: 0xffd9a0, transparent: true, opacity: 0.85, depthWrite: false })
           );
-          glow.scale.set(3, 3, 1);
+          glow.scale.set(4.5, 4.5, 1);
           glow.position.set(px, 7.2, lampZ);
           scene.add(glow);
         }
@@ -237,16 +246,16 @@ export function createCity(seed = 7) {
       const wallSignTexts = ['PORT VELA', 'CANAL ROW', 'OLD CROSSING', 'MESA VERDE'];
       const wallSignIdx = (wz < 0 ? 0 : 2) + (x0 < 0 ? 0 : 1);
       const wsx = (x0 + x1) / 2;
-      const wsBack = box(0.6, 4.5, 13, 0x1a1a1a, wsx, 9.4, wz);
+      const wsBack = box(0.6, 5.5, 18, 0x1a1a1a, wsx, 9.4, wz);
       scene.add(wsBack);
       const wsLabel = labelSprite(wallSignTexts[wallSignIdx], '#ffd34d', 64);
-      wsLabel.scale.set(11, 2.4, 1);
+      wsLabel.scale.set(16, 3.4, 1);
       wsLabel.position.set(wsx, 9.4, wz);
       scene.add(wsLabel);
       const wsGlow = new THREE.Sprite(
         new THREE.SpriteMaterial({ map: glowTex, color: 0xffd34d, transparent: true, opacity: 0.35, depthWrite: false })
       );
-      wsGlow.scale.set(12, 3.2, 1);
+      wsGlow.scale.set(17, 4.2, 1);
       wsGlow.position.set(wsx, 9.4, wz);
       scene.add(wsGlow);
       // Scree strip at the wall base + scattered boulders.      // v3.3: boulders use their OWN prng (seed+999) — drawing them from the
@@ -863,23 +872,27 @@ export function createCity(seed = 7) {
   // dialogue panel (bottom-centre) from both cameras.
   const bargeHull = new THREE.Mesh(
     new THREE.BoxGeometry(8, 1.2, 3.6),
-    new THREE.MeshStandardMaterial({ color: 0x3a3f45, roughness: 0.8, metalness: 0.2 })
+    new THREE.MeshStandardMaterial({ color: 0x6b4a30, roughness: 0.8, metalness: 0.2 })
   );
-  bargeHull.position.set(5, 0.5, -11);
+  bargeHull.position.set(28, 0.5, -8);
   bargeHull.castShadow = true;
   scene.add(bargeHull);
-  const bargeCrate1 = box(1.6, 1.6, 1.6, 0xc96a2e, 3, 1.7, -11);
+  const bargeCrate1 = box(1.6, 1.6, 1.6, 0xc96a2e, 26, 1.7, -8);
   scene.add(bargeCrate1);
-  const bargeCrate2 = box(1.6, 1.6, 1.6, 0x2e7d6b, 6.5, 1.7, -11);
+  const bargeCrate2 = box(1.6, 1.6, 1.6, 0x2e7d6b, 29.5, 1.7, -8);
   scene.add(bargeCrate2);
-  const bargeCabin = box(2.2, 1.4, 2.4, 0xe8e2d0, 7.5, 1.6, -11);
+  const bargeCabin = box(2.2, 1.4, 2.4, 0xe8e2d0, 30.5, 1.6, -8);
   scene.add(bargeCabin);
   const bargeMast = new THREE.Mesh(
     new THREE.CylinderGeometry(0.09, 0.12, 4.5, 6),
     new THREE.MeshStandardMaterial({ color: 0x333333 })
   );
-  bargeMast.position.set(1.5, 3, -11);
+  bargeMast.position.set(24.5, 3, -8);
   scene.add(bargeMast);
+  const bargeLamp = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xffd9a0, transparent: true, opacity: 0.9, depthWrite: false }));
+  bargeLamp.scale.set(3.5, 3.5, 1);
+  bargeLamp.position.set(24.5, 5.4, -8);
+  scene.add(bargeLamp);
   const buoyMat = new THREE.MeshStandardMaterial({ color: 0xff6b00, emissive: 0xff6b00, emissiveIntensity: 0.7 });
   for (const [bx, bz] of [[-30, 10], [30, -10], [60, 9]]) {
     const buoy = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 8), buoyMat);
@@ -1055,14 +1068,34 @@ export function createCity(seed = 7) {
         : (hour >= 18.5 && hour < 20) ? 0x5a7a94
         : 0x1a2a4a;
       // The sun direction + colour still follow the hour, so the glint ages too.
+      lastWaterSky = waterSky; lastSunHex = s2.sun;
       water.setSky(waterSky, sky.uniforms.uSunDir.value, s2.sun);
+      if (sunOverride) applySunOverride();
     },
     /** Keep the sun (and its shadow frustum) centred on the player. */
     followSun(px, pz) {
-      sun.position.set(px - 78, sunYeff, pz - 104);
+      if (sunOverride) {
+        // Low western sun for the wide shot: long shadows toward the camera,
+        // frustum widened to cover the whole wide frame (+-140 around player).
+        sun.position.set(px + sunOverride.x * 160, sunOverride.y * 160, pz + sunOverride.z * 160);
+        sun.shadow.camera.left = -140; sun.shadow.camera.right = 140;
+        sun.shadow.camera.top = 140; sun.shadow.camera.bottom = -140;
+        sun.shadow.camera.updateProjectionMatrix();
+      } else {
+        sun.position.set(px - 78, sunYeff, pz - 104);
+      }
       sun.target.position.set(px, 0, pz);
       sun.target.updateMatrixWorld();
     },
+    /** Staged-shot sun override: re-point sky sun, water glint, light and
+     *  fog for ONE shot. dir = direction TOWARD the sun (will be normalized).
+     *  fogD optional: denser haze so downtown dissolves into the sunset. */
+    setSunOverride(x, y, z, fogD) {
+      sunOverride = new THREE.Vector3(x, y, z).normalize();
+      if (fogD) scene.fog.density = fogD;
+      applySunOverride();
+    },
+    clearSunOverride() { sunOverride = null; },
     /** Park the warm player light over the on-foot figure (night shots). */
     setPlayerLight(x, z) {
       playerLight.position.set(x, 4.5, z);

@@ -37,12 +37,12 @@ export function facadeTexture() {
   for (let y = 64; y < 512; y += 64) {
     const gr = g.createLinearGradient(0, y - 4, 0, y + 6);
     gr.addColorStop(0, 'rgba(90,70,50,0)');
-    gr.addColorStop(0.45, 'rgba(88,68,46,0.24)');
-    gr.addColorStop(0.6, 'rgba(70,52,34,0.30)');
+    gr.addColorStop(0.45, 'rgba(88,68,46,0.38)');
+    gr.addColorStop(0.6, 'rgba(70,52,34,0.48)');
     gr.addColorStop(1, 'rgba(90,70,50,0)');
     g.fillStyle = gr;
     g.fillRect(0, y - 4, 256, 10);
-    g.fillStyle = 'rgba(255,250,238,0.20)';
+    g.fillStyle = 'rgba(255,250,238,0.30)';
     g.fillRect(0, y + 3, 256, 1);
   }
   // Windows: 4 cols x 7 floors, heavier frames, blinds, lit panes, AC boxes.
@@ -55,9 +55,9 @@ export function facadeTexture() {
       g.fillStyle = r > 0.78 ? 'rgba(56,40,24,0.52)' : 'rgba(72,56,38,0.28)';
       g.fillRect(x - 2, y - 2, 38, 44);
       let glass;
-      if (r < 0.46) glass = '#3d4c66';
-      else if (r < 0.62) glass = '#2c3a50';
-      else if (r < 0.76) glass = '#46587a';
+      if (r < 0.46) glass = '#2a3648';
+      else if (r < 0.62) glass = '#1e2836';
+      else if (r < 0.76) glass = '#33415e';
       else if (r < 0.9) glass = '#ffc46a';
       else glass = '#9fd8ef';
       g.fillStyle = glass;
@@ -207,6 +207,17 @@ export function strataTexture() {
     g.fillStyle = Math.random() < 0.5 ? 'rgba(60,40,20,0.14)' : 'rgba(224,196,148,0.11)';
     g.fillRect(Math.random() * 512, Math.random() * 256, 1 + Math.random() * 3, 1 + Math.random() * 3);
   }
+  // Wet band at the base: dark waterline the whole river reads at distance.
+  // Texture v=1 is the wall foot (UVs run top-to-bottom), so paint the bottom
+  // 14% dark + a thin pale waterline edge where the water meets the stone.
+  const wet = g.createLinearGradient(0, 256 * 0.86, 0, 256);
+  wet.addColorStop(0, 'rgba(28,18,10,0)');
+  wet.addColorStop(0.35, 'rgba(28,18,10,0.42)');
+  wet.addColorStop(1, 'rgba(20,12,6,0.62)');
+  g.fillStyle = wet;
+  g.fillRect(0, 256 * 0.86, 512, 256 * 0.14);
+  g.fillStyle = 'rgba(235,220,190,0.28)';
+  g.fillRect(0, 256 * 0.86, 512, 2);
   // Boulders and scrub dots along the base.
   for (let i = 0; i < 90; i += 1) {
     const bx = Math.random() * 512;
