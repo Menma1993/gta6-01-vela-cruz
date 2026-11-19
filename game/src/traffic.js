@@ -18,15 +18,22 @@ export function makeCarMesh(color, police = false) {
     const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.18, 0.4), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xff2233, emissiveIntensity: 1.5 }));
     bar.position.set(0, 1.72, -0.2); g.add(bar);
   }
-  const wheelGeo = new THREE.CylinderGeometry(0.42, 0.42, 0.3, 10);
+  const wheelGeo = new THREE.CylinderGeometry(0.36, 0.36, 0.3, 10);
   const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-  const hubGeo = new THREE.CylinderGeometry(0.2, 0.2, 0.32, 8);
-  const hubMat = new THREE.MeshStandardMaterial({ color: 0xb8bcc2, roughness: 0.25, metalness: 0.8 });
+  const hubGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.32, 8);
+  const hubMat = new THREE.MeshStandardMaterial({ color: 0x2a2d33, roughness: 0.35, metalness: 0.9 });
+  const spokeGeo = new THREE.BoxGeometry(0.02, 0.26, 0.05);
+  const spokeMat = new THREE.MeshStandardMaterial({ color: 0x2a2d33, roughness: 0.35, metalness: 0.9 });
   for (const [x, z] of [[-0.95, 1.4], [0.95, 1.4], [-0.95, -1.4], [0.95, -1.4]]) {
     const w = new THREE.Mesh(wheelGeo, wheelMat);
-    w.rotation.z = Math.PI / 2; w.position.set(x, 0.42, z); g.add(w);
+    w.rotation.z = Math.PI / 2; w.position.set(x, 0.36, z); g.add(w);
     const hub = new THREE.Mesh(hubGeo, hubMat);
-    hub.rotation.z = Math.PI / 2; hub.position.set(x, 0.42, z); g.add(hub);
+    hub.rotation.z = Math.PI / 2; hub.position.set(x, 0.36, z); g.add(hub);
+    for (let k = 0; k < 5; k++) {
+      const spoke = new THREE.Mesh(spokeGeo, spokeMat);
+      spoke.rotation.x = k * Math.PI / 5;
+      spoke.position.set(x + Math.sign(x) * 0.17, 0.36, z); g.add(spoke);
+    }
   }
   // v3: headlights + taillights — emissive lenses plus glow sprites, switched
   // on at night (setNight). A street full of headlights is what makes the

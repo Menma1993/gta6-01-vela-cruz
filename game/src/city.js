@@ -160,11 +160,36 @@ export function createCity(seed = 7) {
   for (const wz of [-26, 26]) {
     for (const [x0, x1] of [[-210, -10], [10, 210]]) {
       const w = (x1 - x0);
-      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, 9, 10), strataMat);
-      wall.position.set((x0 + x1) / 2, 4.5, wz);
+      const wall = new THREE.Mesh(new THREE.BoxGeometry(w, 7, 10), strataMat);
+      wall.position.set((x0 + x1) / 2, 3.5, wz);
       wall.castShadow = true; wall.receiveShadow = true;
       scene.add(wall);
       colliders.push({ x0, z0: wz - 5, x1, z1: wz + 5 });
+
+      const lampZ = wz + (wz < 0 ? 5.4 : -5.4);
+      let pillarCount = 0;
+      for (let px = x0 + 12; px < x1 - 8; px += 25) {
+        const pillar = new THREE.Mesh(new THREE.BoxGeometry(1.4, 7, 0.8), screeMat);
+        pillar.position.set(px, 3.5, lampZ);
+        pillar.castShadow = true;
+        scene.add(pillar);
+        pillarCount++;
+        if (pillarCount % 2 === 0) {
+          const lamp = new THREE.Mesh(
+            new THREE.SphereGeometry(0.3, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffd9a0, emissiveIntensity: 2 })
+          );
+          lamp.position.set(px, 7.2, lampZ);
+          scene.add(lamp);
+
+          const glow = new THREE.Sprite(
+            new THREE.SpriteMaterial({ map: glowTex, color: 0xffd9a0, transparent: true, opacity: 0.5, depthWrite: false })
+          );
+          glow.scale.set(3, 3, 1);
+          glow.position.set(px, 7.2, lampZ);
+          scene.add(glow);
+        }
+      }
       // Scree strip at the wall base + scattered boulders.
       // v3.3: boulders use their OWN prng (seed+999) — drawing them from the
       // city's rnd() shifted the stream and moved every building, including
@@ -175,13 +200,47 @@ export function createCity(seed = 7) {
       scree.position.set((x0 + x1) / 2, 0.05, wz + (wz < 0 ? 8 : -8));
       scree.receiveShadow = true;
       scene.add(scree);
-      for (let b = 0; b < 9; b += 1) {
-        const bw = 1.5 + brnd() * 2.5;
-        const boulder = new THREE.Mesh(new THREE.BoxGeometry(bw, bw * 0.7, bw), new THREE.MeshStandardMaterial({ color: 0x7d5a3a, roughness: 1 }));
-        boulder.position.set(x0 + 8 + brnd() * (w - 16), bw * 0.15, wz + (wz < 0 ? 6.5 : -6.5) + (brnd() - 0.5) * 3);
-        boulder.rotation.y = brnd() * 3;
-        boulder.castShadow = true;
-        scene.add(boulder);
+      // NEW — wooden docks jutting from the bank into the water
+      const dockX = [x0 + 20, x0 + w / 2, x1 - 20];
+      const dockWood = new THREE.MeshStandardMaterial({ color: 0x8a6a44, roughness: 1 });
+      for (let d = 0; d < 3; d += 1) {
+        const dock = new THREE.Mesh(new THREE.BoxGeometry(7, 0.35, 3.5), dockWood);
+        dock.position.set(dockX[d], 0.2, wz - Math.sign(wz) * 8.5);
+        dock.rotation.y = brnd() * 0.1 - 0.05;
+        dock.castShadow = true;
+        scene.add(dock);
+      }
+
+      // NEW — stacked shipping crates near the wall base
+      const crateColors = [0xc96a2e, 0x2e7d6b, 0xb98a2e, 0x8a4a4a];
+      const crateBaseX = [];
+      for (let c = 0; c < 4; c += 1) {
+        let cx = x0 + 10 + brnd() * (w - 20);
+        const stacked = c >= 2;
+        if (stacked) {
+          cx = crateBaseX[c - 2] + 0.2;
+        } else {
+          crateBaseX.push(cx);
+        }
+        const color = crateColors[Math.floor(brnd() * crateColors.length) % crateColors.length];
+        const crate = new THREE.Mesh(
+          new THREE.BoxGeometry(1.3, 1.3, 1.3),
+          new THREE.MeshStandardMaterial({ color: color, roughness: 1 })
+        );
+        crate.position.set(cx, stacked ? 1.95 : 0.65, wz + (wz < 0 ? 6.5 : -6.5) + (brnd() - 0.5) * 2);
+        crate.rotation.y = brnd() * 0.6;
+        crate.castShadow = true;
+        scene.add(crate);
+      }
+
+      // NEW — mooring posts at the outer end of the first and third dock
+      const postWood = new THREE.MeshStandardMaterial({ color: 0x4a3421, roughness: 1 });
+      for (let p = 0; p < 2; p += 1) {
+        const postX = p === 0 ? x0 + 20 : x1 - 20;
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 1.6, 6), postWood);
+        post.position.set(postX, 0.8, wz - Math.sign(wz) * 10);
+        post.castShadow = true;
+        scene.add(post);
       }
     }
   }
@@ -191,7 +250,7 @@ export function createCity(seed = 7) {
   // v4: real asphalt texture (tiled every ~8 m via UV scaling) instead of a
   // flat grey plane — the road surface is half of every street-level frame.
   const roadMat = new THREE.MeshStandardMaterial({
-    color: 0xd8cec2,         // warm pale grey: multiplies the asphalt texture toward warm dark, not purple
+    color: 0xe8dcc4,         // warm pale tan, lighter than before: multiplies the asphalt texture to warm dark asphalt, not maroon
     roughness: 0.95,
     metalness: 0.0,          // never metallic — avoids the "flat dark brown" crush
     envMapIntensity: 0.0,    // no sky reflection while dry
@@ -310,13 +369,13 @@ export function createCity(seed = 7) {
           scene.add(band);
         }
 
-        const hotelSign = labelSprite('HOTEL', '#ff5a3c', 56);
-        hotelSign.scale.set(7.5, 1.4, 1);
-        hotelSign.position.set(16.5, 4.6, 130);
+        const hotelSign = labelSprite('HOTEL', '#ff5a3c', 88);
+        hotelSign.scale.set(10, 1.9, 1);
+        hotelSign.position.set(14, 16.8, 130);
         scene.add(hotelSign);
         const hotelGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff5a3c, opacity: 0.45, transparent: true }));
-        hotelGlow.scale.set(9, 3, 1);
-        hotelGlow.position.set(16.6, 4.6, 130);
+        hotelGlow.scale.set(11, 3.5, 1);
+        hotelGlow.position.set(14, 16.8, 130);
         scene.add(hotelGlow);
 
         const shopfront = box(0.2, 2.6, 15.5, 0x8a5a1a, 16.9, 1.3, 130);
@@ -327,6 +386,36 @@ export function createCity(seed = 7) {
         const awningR = box(4, 0.25, 2.0, 0x2FA36B, 17.6, 3.0, 134);
         awningR.rotation.z = 0.12;
         scene.add(awningR);
+      }
+
+      if (z === 160) {
+        const litWindowMat = new THREE.MeshStandardMaterial({ color: 0x3a2a18, emissive: 0xffc46a, emissiveIntensity: 1.6 });
+        const darkWindowMat = new THREE.MeshStandardMaterial({ color: 0x2c3a55, roughness: 0.25, metalness: 0.4 });
+        const colZ = [156.5, 160, 163.5];
+        const rowY = [4, 6.5, 9, 11.5];
+        for (let row = 0; row < rowY.length; row++) {
+          for (let col = 0; col < colZ.length; col++) {
+            const lit = (row + col) % 2 === 0 || (row === 2 && col === 1);
+            const winGrid = box(0.12, 1.1, 1.4, lit ? 0xffc46a : 0x2c3a55, 16.9, rowY[row], colZ[col]);
+            winGrid.material = lit ? litWindowMat : darkWindowMat;
+            scene.add(winGrid);
+          }
+        }
+
+        const bandY = [3.2, 5.7, 8.2, 10.7];
+        for (const by of bandY) {
+          const band = box(0.14, 0.35, 15.5, 0xC98A2E, 16.92, by, 160);
+          scene.add(band);
+        }
+
+        const motelSign = labelSprite('MOTEL', '#2a6b8a', 88);
+        motelSign.scale.set(7, 1.3, 1);
+        motelSign.position.set(14, 7.6, 156);
+        scene.add(motelSign);
+        const motelGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0x2a6b8a, opacity: 0.4, transparent: true }));
+        motelGlow.scale.set(8, 2.5, 1);
+        motelGlow.position.set(14, 7.6, 156);
+        scene.add(motelGlow);
       }
     }
   }
@@ -371,7 +460,8 @@ export function createCity(seed = 7) {
     }
     for (const cz of [-60, 60, 140]) {
       for (const dz of [-10, 10]) {
-        for (let x = -7; x <= 7; x += 2) put(x, cz + dz, 0.45, 2.0, 0xe8ddc4); // zebra across the avenue
+        if (cz === 140 && dz === 10) continue; // skip the z = 150 row under the hero car
+        for (let x = -7; x <= 7; x += 2) put(x, cz + dz, 0.35, 1.4, 0xe8ddc4); // zebra across the avenue
       }
       for (let x = -200; x < 200; x += 12) {
         if (Math.abs(x) < 14) continue;
@@ -427,6 +517,11 @@ export function createCity(seed = 7) {
     const t = box(2.5, 16, 2.5, 0x8a6a44, -8.5, 8, tz); t.castShadow = true; scene.add(t);
     const t2 = box(2.5, 16, 2.5, 0x8a6a44, 8.5, 8, tz); t2.castShadow = true; scene.add(t2);
     const beam = box(19.5, 1.6, 2, 0x8a6a44, 0, 15.2, tz); beam.castShadow = true; scene.add(beam);
+    const signPanel = box(12, 2.4, 0.4, 0x1a5c3a, 0, 13.0, tz); signPanel.castShadow = true; scene.add(signPanel);
+    const gantryLabel = labelSprite(tz > 0 ? 'OLD CROSSING ↑' : 'PORT VELA ↑', '#ffffff', 52);
+    gantryLabel.scale.set(11, 2.0, 1);
+    gantryLabel.position.set(0, 13.0, tz - 0.35);
+    scene.add(gantryLabel);
   }
   // R3-7: bridge sign removed — it floated in mid-air in the wide/boat shots.
 
@@ -490,6 +585,41 @@ export function createCity(seed = 7) {
   scene.add(facades);
   scene.add(windows);
 
+  // --- Vanishing-point downtown building dress-up (seeded bldg @ -155.8,-44.5) ---
+  const vpFacade = new THREE.Mesh(
+    new THREE.PlaneGeometry(18, 20),
+    new THREE.MeshStandardMaterial({ map: facadeTexture(), roughness: 0.9 })
+  );
+  vpFacade.position.set(-155.8, 17, -38.4);
+  scene.add(vpFacade);
+
+  const vpWinSpots = [
+    [12, -5], [12, 5],
+    [17, -5], [17, 5],
+    [22, -5], [22, 5],
+  ];
+  vpWinSpots.forEach(([y, xOff]) => {
+    const vpWin = box(0.12, 1.1, 1.4, 0x3a2a18, -155.9 + xOff, y, -38.35);
+    vpWin.material = new THREE.MeshStandardMaterial({
+      color: 0x3a2a18,
+      emissive: 0xffc46a,
+      emissiveIntensity: 1.6,
+    });
+    scene.add(vpWin);
+  });
+
+  const vpLabel = labelSprite('VELA CRUZ', '#ffd34d', 72);
+  vpLabel.scale.set(12, 2.2, 1);
+  vpLabel.position.set(-155.8, 30.2, -44.0);
+  scene.add(vpLabel);
+
+  const vpGlow = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: glowTex, color: 0xffd34d, transparent: true, opacity: 0.4 })
+  );
+  vpGlow.scale.set(13, 3, 1);
+  vpGlow.position.set(-155.8, 30.2, -44.0);
+  scene.add(vpGlow);
+
   // v3: roof props on the downtown towers — AC boxes, vents and an antenna
   // per tower, so the skyline has a roofline instead of flat caps.
   for (const t of towers) {
@@ -523,7 +653,7 @@ export function createCity(seed = 7) {
   });
   const clubSign = labelSprite('CLUB VOLTAGE', '#ff2e88', 56);
   clubSign.scale.set(15, 2.8, 1);
-  clubSign.position.set(-114, 12.5, 44); scene.add(clubSign);
+  clubSign.position.set(-114, 12.5, 39.5); scene.add(clubSign);
   const mileSign = labelSprite('NEON MILE', '#00e5ff', 48);
   mileSign.position.set(-110, 20, 60); scene.add(mileSign);
   // v3: the club's north face gets a lit window strip (it was a black wall
@@ -561,14 +691,44 @@ export function createCity(seed = 7) {
   // instead of the signs being flat glowing rectangles in a black street.
   const neonLights = [];
   for (const [color, x, y, z, dist, inten] of [
-    [0xff2e88, -108, 9, 43, 36, 8],
-    [0x00e5ff, -94, 8, 72, 32, 6],
+    [0xff2e88, -108, 9, 43, 36, 12],
+    [0x00e5ff, -94, 8, 72, 32, 9],
   ]) {
     const pl = new THREE.PointLight(color, 0, dist, 1.2);
     pl.position.set(x, y, z);
     scene.add(pl);
     neonLights.push({ light: pl, on: inten });
   }
+
+  const slabWindow = new THREE.Mesh(new THREE.PlaneGeometry(12, 20), winMat);
+  slabWindow.position.set(-104.7, 11, 63.6);
+  slabWindow.rotation.y = Math.PI;
+  scene.add(slabWindow);
+
+  const slabSign = box(0.6, 8, 1.2, 0xff2e88, -100, 14, 63.4, { emissive: 0xff2e88, ei: 2.2 });
+  scene.add(slabSign);
+  const slabSignGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: 0xff2e88, opacity: 0.5, transparent: true }));
+  slabSignGlow.scale.set(4, 9, 1);
+  slabSignGlow.position.set(-100, 14, 63.2);
+  scene.add(slabSignGlow);
+
+  const slabWire = box(12.5, 0.06, 0.06, 0x222222, -104.7, 16, 63.5);
+  scene.add(slabWire);
+  for (let i = 0; i < 9; i++) {
+    const x = -111 + (i * (111 - 98.5)) / 8;
+    const y = 15.2 + 0.9 * Math.pow((x + 104.7) / 6.5, 2);
+    const bulb = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 6, 6),
+      new THREE.MeshStandardMaterial({ color: 0xffd9a0, emissive: 0xffc46a, emissiveIntensity: 2.5 })
+    );
+    bulb.position.set(x, y, 63.5);
+    scene.add(bulb);
+  }
+
+  const slabLight = new THREE.PointLight(0xff2e88, 0, 30, 1.2);
+  slabLight.position.set(-104, 8, 60);
+  scene.add(slabLight);
+  neonLights.push({ light: slabLight, on: 7 });
 
   // v5: wet-only neon reflection streaks on the plaza (pink + cyan).
   for (const [color, x, z] of [[0xff2e88, -108, 44], [0x00e5ff, -94, 70]]) {
@@ -734,7 +894,7 @@ export function createCity(seed = 7) {
       wet = on;
       roadMat.roughness = on ? 0.32 : 0.95;   // glossy-but-not-mirror when wet
       roadMat.metalness = 0.0;                // keep dielectric in both states
-      roadMat.envMapIntensity = on ? 0.5 : 0.0; // faint sky sheen only — no purple mirror
+      roadMat.envMapIntensity = on ? 0.25 : 0.0; // halved sky sheen — enough wet gloss, no purple-pink maroon tint
       for (const s of streaks) s.material.opacity = on ? 0.7 : 0;
       if (sunLane) sunLane.material.opacity = on ? 0.35 : 0;
     },

@@ -90,7 +90,7 @@ export function stageShot(name, G) {
     // (golden wide / golden chase / neon night / blue dawn).
     Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.6, complete: 68 });
     G.city.setHour(17.6);
-    G.renderer.setExposure(1.18);
+    G.renderer.setExposure(1.24);
     G.player.setMode('car', 0, 8, Math.PI);
     G.player.drive(0, 0, 0, false, G.city.colliders);
     G.wanted.setWanted(0);
@@ -193,7 +193,7 @@ export function stageShot(name, G) {
     // sand promenade left) and the arch is small and hazed at the vanish.
     Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 18.0, complete: 68 });
     G.city.setHour(18.0);
-    G.renderer.setExposure(1.15);
+    G.renderer.setExposure(1.22);
     G.player.setMode('car', 0, 150, Math.PI); // z=150, heading north up the boulevard
     G.player.speed = 42.8; // 154 km/h
     G.player.drive(0, 0, 0, false, G.city.colliders);
@@ -207,20 +207,21 @@ export function stageShot(name, G) {
     G.city.setWet(true);
     G.traffic.setNight(true);
     stageTrafficNear(G, [[0, 134], [1, 121], [8, 107], [9, 96], [16, -180], [17, 180]], [[0, -11, 140], [1, 11, 128], [2, -11, 113], [3, 11, 119], [4, -13, 136], [5, -17, 124], [6, -12, 148]]);
-    // Cover: 5-star chase down Palm Boulevard. Low 3/4 rear-left so the rear face + left flank +
-    // wheels + ground shadow all read, and the roof stops dominating.
-    //   behind:  z=154 vs car rear z=150  -> 4 m behind (was 6)
-    //   left:    x=-4.5 vs centreline x=0 -> 4.5 m to the car's left
-    //   height:  1.05 m (down ~40% from 1.8)
-    // lookAt must sit ON the ray cam -> car rear-top (0, 1.25, 150), extended forward by the same
-    // factor the old shot used. Old: dir (16.7,-3.3,100)-(-2.0,1.8,156) = (18.7,-5.1,-56), |.|=59.26,
-    // over the unit-ish (2,-0.55,-6) with |.|=6.35  ->  59.26/6.35 = 9.3x.
-    // New: dir to rear-top = (0,1.25,150)-(-4.5,1.05,154) = (4.5, 0.2, -4), |.| = 6.02.
-    //   9.3 * (4.5, 0.2, -4) = (41.85, 1.86, -37.2)
-    //   lookAt = (-4.5+41.85, 1.05+1.86, 154-37.2) = (37.35, 2.91, 116.8)
-    // Car stays dead-centred (rear-top is exactly on the ray); aim swings right of the road axis,
-    // pushing the road vanishing point + sun disc to the upper-left (~34% width, ~27% height).
-    cam = [-4.5, 1.05, 154, 37.4, 2.9, 116.8];
+    // Cover cam: 3/4 rear-left, rear face dominating (5-star Palm Blvd chase).
+    // Car rear-top (0, 1.25, 150), heading north (-Z). Camera sits 7.5 m behind
+    // the rear bumper (z 157.5 vs rear 150) and 2.2 m off the centreline to the
+    // car's left (x -2.2), 1.3 m up — a rear-left diagonal, so the tail bar,
+    // bumper and wing fill the frame and the left flank is only a partial view.
+    // Ray cam -> rear-top = (0-(-2.2), 1.25-1.3, 150-157.5) = (2.2, -0.05, -7.5),
+    //   |ray| = sqrt(4.84 + 0.0025 + 56.25) = 7.82 m.
+    // Extend by k = 9.3, matching the old rig (41.9/4.5 = 9.31, 37.2/4 = 9.30):
+    //   lookAt = cam + 9.3 * ray
+    //          = (-2.2 + 20.46, 1.3 - 0.465, 157.5 - 69.75)
+    //          = (18.26, 0.835, 87.75)
+    // Look-at stays on the cam->car ray, so the car remains centred; the view
+    // yaws toward +X of due north, putting the road vanishing point and the
+    // due-north sun disc in the upper-left of frame.
+    cam = [-2.2, 1.3, 157.5, 18.3, 0.84, 87.8];
   }
   syncHud(G, lookH, back);
   if (cam) G.renderer.setCam(...cam);

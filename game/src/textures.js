@@ -247,15 +247,15 @@ export function asphaltTexture() {
       }
     }
   };
-  // r4: warm brown-grey base (was neutral #2e2e34) — golden-hour asphalt, not cold grey.
-  g.fillStyle = '#38302a';
+  // r4: warm brown base (was neutral #2e2e34) — golden-hour asphalt, not cold grey; lifted for cover shot.
+  g.fillStyle = '#453a2e';
   g.fillRect(0, 0, S, S);
 
   // Broad mottle: keeps the wet pass reading patchy instead of one flat dark.
   for (let i = 0; i < 10; i += 1) {
     const x = Math.random() * S, y = Math.random() * S, r = 44 + Math.random() * 70;
     const pale = Math.random() < 0.4;
-    const rgb = pale ? '104,104,116' : '14,14,18';
+    const rgb = pale ? '122,108,92' : '14,14,18';
     const a = pale ? 0.05 : 0.06 + Math.random() * 0.05;
     wrap(x, y, r, (px, py) => {
       const grd = g.createRadialGradient(px, py, 0, px, py, r);
