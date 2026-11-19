@@ -97,6 +97,7 @@ export function createCity(seed = 7) {
   const shells = []; // collectible Sun Shells {x,z,mesh,taken}
   const lamps = [];
   const streaks = []; // wet-road lamp streaks (visible only when wet)
+  let sunLane = null;  // sun reflection streak down the avenue centre (visible only when wet)
   const pools = []; // warm light pools on the ground under lamps (night only)
 
   // Shared rock strata material: canyon walls + mesa sides read as layered
@@ -177,7 +178,7 @@ export function createCity(seed = 7) {
       for (let b = 0; b < 9; b += 1) {
         const bw = 1.5 + brnd() * 2.5;
         const boulder = new THREE.Mesh(new THREE.BoxGeometry(bw, bw * 0.7, bw), new THREE.MeshStandardMaterial({ color: 0x7d5a3a, roughness: 1 }));
-        boulder.position.set(x0 + 8 + brnd() * (w - 16), bw * 0.3, wz + (wz < 0 ? 8 : -8) + (brnd() - 0.5) * 3);
+        boulder.position.set(x0 + 8 + brnd() * (w - 16), bw * 0.15, wz + (wz < 0 ? 6.5 : -6.5) + (brnd() - 0.5) * 3);
         boulder.rotation.y = brnd() * 3;
         boulder.castShadow = true;
         scene.add(boulder);
@@ -190,7 +191,7 @@ export function createCity(seed = 7) {
   // v4: real asphalt texture (tiled every ~8 m via UV scaling) instead of a
   // flat grey plane — the road surface is half of every street-level frame.
   const roadMat = new THREE.MeshStandardMaterial({
-    color: 0xffffff,
+    color: 0xd8cec2,         // warm pale grey: multiplies the asphalt texture toward warm dark, not purple
     roughness: 0.95,
     metalness: 0.0,          // never metallic — avoids the "flat dark brown" crush
     envMapIntensity: 0.0,    // no sky reflection while dry
@@ -207,6 +208,26 @@ export function createCity(seed = 7) {
     r.rotation.x = -Math.PI / 2; r.position.set(x, 0.06, z); r.receiveShadow = true; scene.add(r);
   }
   road(16, 420, 0, 0); road(420, 14, 0, -60); road(420, 14, 0, 60); road(420, 14, 0, 140); road(14, 420, -90, 0); road(14, 420, 90, 0);
+
+  // Sun lane: long soft orange reflection streak down the avenue centre.
+  // The sun is due north, so its wet-road reflection runs down the avenue toward the camera.
+  {
+    const laneMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(2.6, 120),
+      new THREE.MeshBasicMaterial({
+        map: streakTex,
+        color: 0xff9a3e,
+        transparent: true,
+        opacity: 0,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+      })
+    );
+    laneMesh.rotation.x = -Math.PI / 2;
+    laneMesh.position.set(0, 0.1, 100);
+    scene.add(laneMesh);
+    sunLane = laneMesh;
+  }
   // Sidewalks: pale strips flanking the avenue + the two main cross streets.
   const walkMat = new THREE.MeshStandardMaterial({ color: 0x9a8a6e, roughness: 1 });
   function walk(w, d, x, z) {
@@ -231,7 +252,7 @@ export function createCity(seed = 7) {
   {
     const blvdZ = [40, 70, 100, 130, 160];
     const blvdH = [12, 15, 10, 18, 13];
-    const blvdColor = [0xF59E4C, 0xF27D6B, 0xFFC94D, 0xE87A90, 0xF2D8A7];
+    const blvdColor = [0xF59E4C, 0xF27D6B, 0xE87A90, 0xFFC94D, 0xF2D8A7];
     const windowMat = new THREE.MeshStandardMaterial({ color: 0x2c3a55, roughness: 0.4, metalness: 0.3, emissive: 0xffffff, emissiveMap: windowAtlas(), emissiveIntensity: 0.9 });
     for (let i = 0; i < blvdZ.length; i++) {
       const z = blvdZ[i], h = blvdH[i];
@@ -241,10 +262,17 @@ export function createCity(seed = 7) {
       scene.add(bldg);
       colliders.push({ x0: 17, z0: z - 8, x1: 25, z1: z + 8 });
 
-      const win = new THREE.Mesh(new THREE.PlaneGeometry(6.5, h * 0.55), windowMat);
-      win.position.set(16.85, h * 0.55, z);
+      const win = new THREE.Mesh(new THREE.PlaneGeometry(9.5, h * 0.6), windowMat);
+      win.position.set(16.85, h * 0.58, z);
       win.rotation.y = -Math.PI / 2;
       scene.add(win);
+
+      if (z === 130) {
+        const win2 = new THREE.Mesh(new THREE.PlaneGeometry(4, h * 0.5), windowMat);
+        win2.position.set(16.85, h * 0.5, z + 4.5);
+        win2.rotation.y = -Math.PI / 2;
+        scene.add(win2);
+      }
 
       const awning = box(5, 0.25, 2.2, 0x2FA36B, 17.6, 3.4, z);
       awning.rotation.z = 0.12;
@@ -347,8 +375,8 @@ export function createCity(seed = 7) {
   const liftSpan = box(15, 0.5, 18, 0x4a4b52, 0, -0.1, 0); scene.add(liftSpan);
   for (const sx of [-8.4, 8.4]) { const rail = box(0.5, 1.4, WORLD.bridgeHalf * 2, 0x6b5a3a, sx, 1.0, 0); scene.add(rail); }
   for (const pz of [-10, 10]) {
-    for (const px of [-10, 10]) {
-      const p = box(3, 8, 3, 0x8a7a5e, px, -2, pz); scene.add(p);
+    for (const px of [-7.5, 7.5]) {
+      const p = box(3, 6, 3, 0x8a7a5e, px, -3, pz); scene.add(p);
     }
   }
   // Bridge towers with VELA CRUZ letters, joined by a crossbeam so each
@@ -358,9 +386,7 @@ export function createCity(seed = 7) {
     const t2 = box(2.5, 16, 2.5, 0x8a6a44, 8.5, 8, tz); t2.castShadow = true; scene.add(t2);
     const beam = box(19.5, 1.6, 2, 0x8a6a44, 0, 15.2, tz); beam.castShadow = true; scene.add(beam);
   }
-  const bridgeSign = labelSprite('VELA CRUZ BRIDGE', '#ffd34d', 52);
-  bridgeSign.scale.set(18, 3.35, 1);
-  bridgeSign.position.set(0, 16.2, -34); scene.add(bridgeSign);
+  // R3-7: bridge sign removed — it floated in mid-air in the wide/boat shots.
 
   // Buildings: seeded low-poly blocks along the streets, kept off roads/river.
   // One InstancedMesh for all facades (instanceColor per district palette)
@@ -455,7 +481,7 @@ export function createCity(seed = 7) {
   });
   const clubSign = labelSprite('CLUB VOLTAGE', '#ff2e88', 56);
   clubSign.scale.set(15, 2.8, 1);
-  clubSign.position.set(-110, 14, 46); scene.add(clubSign);
+  clubSign.position.set(-114, 12.5, 44); scene.add(clubSign);
   const mileSign = labelSprite('NEON MILE', '#00e5ff', 48);
   mileSign.position.set(-110, 20, 60); scene.add(mileSign);
   // v3: the club's north face gets a lit window strip (it was a black wall
@@ -482,10 +508,10 @@ export function createCity(seed = 7) {
     const panel = box(w, 2.2, 0.5, 0x111111, x, 8, z, { emissive: color, ei: 2.4 });
     panel.rotation.y = ry; scene.add(panel);
     const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending }));
-    glow.scale.set(7, 4, 1);
+    glow.scale.set(w * 0.9, 3, 1);
     glow.position.set(x, 8, z); scene.add(glow);
   }
-  neonBoard(-88, 38, 9, 0xff2e88, 0.4);
+  neonBoard(-128, 36, 5, 0xff2e88, 0.4);
   neonBoard(-132, 62, 8, 0x00e5ff, -0.5);
   neonBoard(-96, 74, 7, 0xffd400, 0.2);
   // v4: neon SPILL — real coloured point lights under the signs, so the pink
@@ -514,13 +540,10 @@ export function createCity(seed = 7) {
     streaks.push(m);
   }
 
-  // Shops: marked buildings with floating labels.
+  // Shops: marked buildings (labels removed R3-7 — they floated above the roofs).
   for (const s of SHOPS) {
     const b = box(14, 8, 12, 0x6b4a2f, s.x, 4, s.z); scene.add(b);
     colliders.push({ x0: s.x - 7, z0: s.z - 6, x1: s.x + 7, z1: s.z + 6 });
-    const lab = labelSprite(s.name.toUpperCase(), '#ffd34d', 46);
-    lab.scale.set(12, 2.24, 1);
-    lab.position.set(s.x, 9.5, s.z); scene.add(lab);
   }
 
   // Port Vela dock + a moored speedboat hull; street lamps along the avenue.
@@ -667,10 +690,11 @@ export function createCity(seed = 7) {
     /** Wet roads: glossy dark asphalt + visible lamp streaks. Dry: matte. */
     setWet(on) {
       wet = on;
-      roadMat.roughness = on ? 0.28 : 0.95;   // glossy-but-not-mirror when wet
+      roadMat.roughness = on ? 0.32 : 0.95;   // glossy-but-not-mirror when wet
       roadMat.metalness = 0.0;                // keep dielectric in both states
-      roadMat.envMapIntensity = on ? 1.2 : 0.0; // sunset sky reflects only when wet
+      roadMat.envMapIntensity = on ? 0.5 : 0.0; // faint sky sheen only — no purple mirror
       for (const s of streaks) s.material.opacity = on ? 0.7 : 0;
+      if (sunLane) sunLane.material.opacity = on ? 0.35 : 0;
     },
     setHour(hour) {
       const s2 = skyFor(hour);

@@ -90,7 +90,7 @@ export function stageShot(name, G) {
     // (golden wide / golden chase / neon night / blue dawn).
     Object.assign(save, { cash: 24680, storyDone: 2, rep: 3, repProgress: 42, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 17.6, complete: 68 });
     G.city.setHour(17.6);
-    G.renderer.setExposure(1.12);
+    G.renderer.setExposure(1.18);
     G.player.setMode('car', 0, 8, Math.PI);
     G.player.drive(0, 0, 0, false, G.city.colliders);
     G.wanted.setWanted(0);
@@ -193,28 +193,26 @@ export function stageShot(name, G) {
     // sand promenade left) and the arch is small and hazed at the vanish.
     Object.assign(save, { cash: 24680, storyDone: 5, rep: 4, repProgress: 68, health: 82, armour: 64, day: 3, weekday: 'FRI', hour: 18.0, complete: 68 });
     G.city.setHour(18.0);
-    G.renderer.setExposure(1.05);
+    G.renderer.setExposure(1.15);
     G.player.setMode('car', 0, 150, Math.PI); // z=150, heading north up the boulevard
     G.player.speed = 42.8; // 154 km/h
     G.player.drive(0, 0, 0, false, G.city.colliders);
     G.wanted.setWanted(5);
-    // 28 m ahead (z≈122), 16 m up, 2 m east of the player's axis: reads as a
-    // medium helicopter high and just left of frame centre, off the sun disc.
-    G.wanted.setHeli(28, 16, -2);
+    // 30 m ahead (z≈120), 13 m up, 15 m to the player's left: heli sits ~56% width / ~19% height, clear of the VCPD HUD panel and of the z=130 building.
+    G.wanted.setHeli(30, 13, -15);
     baseUi(G, save);
     G.ui.location = 'PALM BOULEVARD · Vela Cruz';
     G.ui.dialogue = { ...CHARACTERS.mara, line: 'Lose that helicopter before you bring the money to my garage!' };
     G.ui.stolen = true;
     G.city.setWet(true);
     G.traffic.setNight(true);
-    stageTrafficNear(G, [[0, 134], [1, 121], [8, 107], [9, 96]], [[0, -11, 140], [1, 11, 128], [2, -11, 113], [3, 11, 119]]);
-    // v8: 8 m behind the car (z=158), 2.5 m to its left, 2.4 m up. lookAt is
-    // swung to +6 in x at z=110 so the view axis crosses the car's lane just
-    // left of the hero car instead of clipping it:
-    // axisX(150) = -2.5 + (6 + 2.5) * (158 - 150) / (158 - 110) = -1.08
-    // -> car centre ~1.1 m right of the axis at 8 m, i.e. ~56% of frame width,
-    // rear 3/4 intact, while the road/bridge/sun vanish upper-left of centre.
-    cam = [-2.5, 2.4, 158, 6, 1.8, 110];
+    stageTrafficNear(G, [[0, 134], [1, 121], [8, 107], [9, 96], [16, -180], [17, 180]], [[0, -11, 140], [1, 11, 128], [2, -11, 113], [3, 11, 119], [4, -13, 136], [5, -17, 124], [6, -12, 148]]);
+    // v9 (R3-1a): 6 m behind the car (z=156), 2 m to its left, 1.8 m up.
+    // lookAt lies on the ray camera -> car rear-top (0, 1.25, 150), so the
+    // car centre lands ~50% width spanning ~34% of the frame, rear 3/4
+    // (rear + left side) visible; road vanishing point + sun disc sit
+    // upper-left (~34% width, sun ~27% height).
+    cam = [-2.0, 1.8, 156, 16.7, -3.3, 100];
   }
   syncHud(G, lookH, back);
   if (cam) G.renderer.setCam(...cam);
